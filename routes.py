@@ -405,45 +405,48 @@ def register_routes(app):
             
             # Check permissions based on action and user role
             if action == 'approve' and ticket.can_be_approved_by(current_user):
-                # Se è presente un ID per l'IT staff, assegna il ticket
-                assignee_id = request.form.get('assignee_id')
+                # Solo approvazione, nel nuovo workflow senza assegnazione diretta
+                ticket.status = TicketStatus.APPROVED
+                ticket.approver_id = current_user.id
                 
-                # Se è richiesta selezione dell'assegnatario ma non è stato selezionato
-                if not assignee_id and 'show_assign_modal' not in request.form:
-                    # Prepara il form di assegnazione con gli utenti IT
-                    it_users = User.query.filter_by(role=UserRole.IT, is_active=True).all()
-                    if not it_users:
-                        flash('Non ci sono utenti IT disponibili per l\'assegnazione.', 'warning')
-                        return redirect(url_for('approvals'))
-                    
-                    # Ridireziona alla stessa pagina ma con un flag per mostrare la modale
-                    flash('Per approvare il ticket, seleziona un membro del team IT.', 'info')
-                    return render_template(
-                        'manager/approve_modal.html', 
-                        ticket=ticket,
-                        it_users=it_users
-                    )
+                # Aggiungi nota di sistema per l'approvazione
+                approval_comment = Comment(
+                    content=f"Ticket approvato da {current_user.username}",
+                    ticket_id=ticket.id,
+                    author_id=current_user.id,
+                    internal_only=True
+                )
+                db.session.add(approval_comment)
+                db.session.commit()
                 
-                if assignee_id:
-                    # Assegna il ticket all'utente IT scelto
-                    assignee = User.query.get(assignee_id)
-                    if assignee and assignee.role == UserRole.IT:
-                        ticket.assignee_id = assignee_id
-                        ticket.status = TicketStatus.ASSIGNED  # Direttamente assegnato
-                        ticket.approver_id = current_user.id
-                        flash(f'Ticket approvato e assegnato a {assignee.username}.', 'success')
-                    else:
-                        flash('Utente IT non valido selezionato.', 'danger')
-                        return redirect(url_for('approvals'))
-                else:
-                    # Approvazione standard senza assegnazione
-                    ticket.status = TicketStatus.APPROVED
-                    ticket.approver_id = current_user.id
-                    flash('Ticket approvato. Sarà assegnato a un membro del team IT.', 'success')
+                flash('Ticket approvato. Ora assegna il ticket a un membro del team IT.', 'success')
+                
+                # Reindirizza direttamente alla pagina di assegnazione 
+                it_users = User.query.filter_by(role=UserRole.IT, is_active=True).all()
+                if not it_users:
+                    flash('Non ci sono utenti IT disponibili per l\'assegnazione.', 'warning')
+                    return redirect(url_for('approvals'))
+                
+                return render_template(
+                    'manager/assign_it_staff.html', 
+                    ticket=ticket,
+                    it_users=it_users
+                )
                 
             elif action == 'reject' and ticket.can_be_approved_by(current_user):
                 ticket.status = TicketStatus.REJECTED
                 ticket.approver_id = current_user.id
+                
+                # Aggiungi nota di sistema per il rifiuto
+                reject_comment = Comment(
+                    content=f"Ticket rifiutato da {current_user.username}",
+                    ticket_id=ticket.id,
+                    author_id=current_user.id,
+                    internal_only=True
+                )
+                db.session.add(reject_comment)
+                db.session.commit()
+                
                 flash('Ticket rifiutato.', 'danger')
                 
             elif action == 'start' and (ticket.assignee_id == current_user.id or current_user.is_admin()):
@@ -692,14 +695,20 @@ def register_routes(app):
         
         # Tickets by category
         from sqlalchemy import func
-        category_stats = db.session.query(
+        category_query = db.session.query(
             Category.name, func.count(Ticket.id)
         ).join(Ticket).group_by(Category.name).all()
         
+        # Convertire in liste per renderli JSON serializzabili
+        category_stats = [[cat_name, count] for cat_name, count in category_query]
+        
         # Tickets by assignee
-        assignee_stats = db.session.query(
+        assignee_query = db.session.query(
             User.username, func.count(Ticket.id)
         ).join(Ticket, User.id == Ticket.assignee_id).group_by(User.username).all()
+        
+        # Convertire in liste per renderli JSON serializzabili
+        assignee_stats = [[username, count] for username, count in assignee_query]
         
         # Time to resolution stats
         resolved_tickets = Ticket.query.filter(Ticket.status.in_([TicketStatus.RESOLVED, TicketStatus.CLOSED])).all()
