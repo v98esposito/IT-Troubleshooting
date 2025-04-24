@@ -12,29 +12,74 @@
     </div>
 </div>
 
+<!-- Stato di avanzamento dei ticket -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Stato di avanzamento dei ticket</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress" style="height: 30px;">
+                    <!-- Ticket In corso (Assigned + In Progress + Waiting User) -->
+                    {% set in_progress_percent = (tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length) / total_assigned * 100 if total_assigned > 0 else 0 %}
+                    
+                    <!-- Ticket Completati (Resolved + Closed) -->
+                    {% set completed_percent = (tickets_by_status.resolved|length + tickets_by_status.closed|length) / total_assigned * 100 if total_assigned > 0 else 0 %}
+                    
+                    <!-- Ticket Rifiutati -->
+                    {% set rejected_count = tickets_by_status.rejected|default([])|length %}
+                    {% set rejected_percent = rejected_count / total_assigned * 100 if total_assigned > 0 else 0 %}
+                    
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ in_progress_percent }}%;" 
+                        aria-valuenow="{{ in_progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+                        In corso ({{ (tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length) }})
+                    </div>
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ completed_percent }}%;" 
+                        aria-valuenow="{{ completed_percent }}" aria-valuemin="0" aria-valuemax="100">
+                        Completati ({{ (tickets_by_status.resolved|length + tickets_by_status.closed|length) }})
+                    </div>
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: {{ rejected_percent }}%;" 
+                        aria-valuenow="{{ rejected_percent }}" aria-valuemin="0" aria-valuemax="100">
+                        Rifiutati ({{ rejected_count }})
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Statistics Cards -->
 <div class="row mb-4">
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <div class="card bg-dark text-white h-100">
             <div class="card-body text-center">
                 <h1 class="display-4">{{ total_assigned }}</h1>
-                <p class="card-text">Total Assigned Tickets</p>
+                <p class="card-text">Ticket totali</p>
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
-        <div class="card bg-dark text-white h-100">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-dark h-100">
             <div class="card-body text-center">
-                <h1 class="display-4">{{ total_active }}</h1>
-                <p class="card-text">Active Tickets</p>
+                <h1 class="display-4">{{ tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length }}</h1>
+                <p class="card-text">In corso</p>
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
-        <div class="card bg-dark text-white h-100">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white h-100">
             <div class="card-body text-center">
-                <h1 class="display-4">{{ total_closed }}</h1>
-                <p class="card-text">Resolved/Closed</p>
+                <h1 class="display-4">{{ tickets_by_status.resolved|length + tickets_by_status.closed|length }}</h1>
+                <p class="card-text">Completati</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body text-center">
+                <h1 class="display-4">{{ tickets_by_status.rejected|default([])|length }}</h1>
+                <p class="card-text">Rifiutati</p>
             </div>
         </div>
     </div>
@@ -215,6 +260,60 @@
                 <div class="text-center p-4">
                     <i class="bi bi-check2-all text-muted fs-1"></i>
                     <p class="mt-3">No recently resolved tickets.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rejected Tickets -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Ticket Rifiutati
+                </h5>
+                <span class="badge bg-light text-danger">{{ tickets_by_status.rejected|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if tickets_by_status.rejected %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Titolo</th>
+                                <th>Utente</th>
+                                <th>Categoria</th>
+                                <th>Data Rifiuto</th>
+                                <th>Rifiutato Da</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in tickets_by_status.rejected %}
+                            <tr>
+                                <td>#{{ ticket.id }}</td>
+                                <td>
+                                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
+                                        {{ ticket.title }}
+                                    </a>
+                                </td>
+                                <td>{{ ticket.creator.username }}</td>
+                                <td>{{ ticket.category_rel.name }}</td>
+                                <td>{{ ticket.updated_at.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ ticket.approver.username if ticket.approver else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center p-4">
+                    <i class="bi bi-x-circle text-muted fs-1"></i>
+                    <p class="mt-3">Nessun ticket rifiutato.</p>
                 </div>
                 {% endif %}
             </div>

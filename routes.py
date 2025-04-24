@@ -772,7 +772,8 @@ def register_routes(app):
             'in_progress': [],
             'waiting_user': [],
             'resolved': [],
-            'closed': []
+            'closed': [],
+            'rejected': []  # Aggiungi categoria per ticket rifiutati
         }
         
         for ticket in assigned_tickets:
@@ -786,6 +787,27 @@ def register_routes(app):
                 tickets_by_status['resolved'].append(ticket)
             elif ticket.status == TicketStatus.CLOSED:
                 tickets_by_status['closed'].append(ticket)
+            elif ticket.status == TicketStatus.REJECTED:
+                tickets_by_status['rejected'].append(ticket)
+        
+        # Ottieni anche i ticket rifiutati per i quali sei stato selezionato come assegnatario
+        rejected_tickets = Ticket.query.filter(
+            and_(
+                Ticket.status == TicketStatus.REJECTED,
+                or_(
+                    Ticket.assignee_id == current_user.id,
+                    and_(
+                        Ticket.assignee_id == None,
+                        current_user.is_admin()
+                    )
+                )
+            )
+        ).all()
+        
+        # Aggiungi i ticket rifiutati trovati alla lista (senza duplicati)
+        for ticket in rejected_tickets:
+            if ticket not in tickets_by_status['rejected']:
+                tickets_by_status['rejected'].append(ticket)
         
         # Get available tickets that can be assigned
         available_tickets = Ticket.query.filter(
@@ -796,7 +818,7 @@ def register_routes(app):
         ).order_by(Ticket.created_at.desc()).all()
         
         # Statistics for IT dashboard
-        total_assigned = len(assigned_tickets)
+        total_assigned = len(assigned_tickets) + len(tickets_by_status['rejected'])
         total_active = len(tickets_by_status['assigned']) + len(tickets_by_status['in_progress']) + len(tickets_by_status['waiting_user'])
         total_closed = len(tickets_by_status['resolved']) + len(tickets_by_status['closed'])
         
