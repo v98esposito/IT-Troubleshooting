@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket.id }} - IT Support Tickets{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ticket_list') }}">Tickets</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Ticket #{{ ticket.id }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Ticket Details -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-ticket-detailed me-2"></i>
+                    Ticket #{{ ticket.id }}
+                </h4>
+                <span class="badge 
+                    {% if ticket.status.name == 'AWAITING_APPROVAL' %}bg-warning
+                    {% elif ticket.status.name == 'NEW' %}bg-info
+                    {% elif ticket.status.name == 'ASSIGNED' %}bg-primary
+                    {% elif ticket.status.name == 'IN_PROGRESS' %}bg-success
+                    {% elif ticket.status.name == 'WAITING_USER' %}bg-warning
+                    {% elif ticket.status.name == 'RESOLVED' %}bg-success
+                    {% elif ticket.status.name == 'REJECTED' %}bg-danger
+                    {% elif ticket.status.name == 'CLOSED' %}bg-secondary
+                    {% else %}bg-secondary{% endif %}">
+                    {{ ticket.status.value }}
+                </span>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ ticket.title }}</h5>
+                <div class="mb-3">
+                    <span class="badge bg-secondary">{{ ticket.category_rel.name }}</span>
+                    <small class="text-muted ms-2">Created: {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    {% if ticket.updated_at != ticket.created_at %}
+                    <small class="text-muted ms-2">Updated: {{ ticket.updated_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    {% endif %}
+                </div>
+                
+                <div class="card bg-dark mb-3">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Description</h6>
+                        <p class="card-text">{{ ticket.description | nl2br }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Reported by:</strong><br>
+                        {{ ticket.creator.username }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Assigned to:</strong><br>
+                        {{ ticket.assignee.username if ticket.assignee else "Not assigned" }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Approver:</strong><br>
+                        {{ ticket.approver.username if ticket.approver else "N/A" }}
+                    </div>
+                </div>
+                
+                {% if ticket.attachments.all() %}
+                <h6 class="mt-4">Attachments</h6>
+                <ul class="list-group mb-3">
+                    {% for attachment in ticket.attachments %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-paperclip me-2"></i>
+                            {{ attachment.filename }}
+                        </div>
+                        <a href="{{ url_for('download_file', filename=attachment.file_path) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download"></i> Download
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-dots me-2"></i>
+                    Comments
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if comments %}
+                <div class="comment-timeline">
+                    {% for comment in comments %}
+                    <div class="comment-item {% if comment.internal_only %}comment-internal{% endif %}">
+                        <div class="comment-header d-flex justify-content-between">
+                            <div>
+                                <strong>{{ comment.author.username }}</strong>
+                                <small class="text-muted ms-2">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            {% if comment.internal_only %}
+                            <span class="badge bg-warning text-dark">Internal Only</span>
+                            {% endif %}
+                        </div>
+                        <div class="comment-body mt-2">
+                            {{ comment.content | nl2br }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center p-4">
+                    <i class="bi bi-chat text-muted fs-1"></i>
+                    <p class="mt-3">No comments yet.</p>
+                </div>
+                {% endif %}
+                
+                <!-- Comment Form -->
+                <div class="mt-4">
+                    <h6>Add Comment</h6>
+                    <form method="POST" action="{{ url_for('add_comment', ticket_id=ticket.id) }}" enctype="multipart/form-data">
+                        {{ comment_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ comment_form.content(class="form-control", rows=3, placeholder="Enter your comment here...") }}
+                            {% if comment_form.content.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in comment_form.content.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ comment_form.attachment.label(class="form-label") }}
+                            {{ comment_form.attachment(class="form-control") }}
+                            {% if comment_form.attachment.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in comment_form.attachment.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if current_user.is_it() or current_user.is_manager() or current_user.is_admin() %}
+                        <div class="mb-3 form-check">
+                            {{ comment_form.internal_only(class="form-check-input") }}
+                            {{ comment_form.internal_only.label(class="form-check-label") }}
+                            <div class="form-text">
+                                Internal comments are only visible to IT staff and managers, not to the ticket creator.
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-grid gap-2">
+                            {{ comment_form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Ticket Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    Ticket Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Manager Approval Actions -->
+                {% if ticket.status.name == 'AWAITING_APPROVAL' and current_user.is_manager() %}
+                <div class="d-grid gap-2 mb-3">
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='approve') }}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i> Approve Ticket
+                        </button>
+                    </form>
+                    
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='reject') }}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle me-1"></i> Reject Ticket
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                
+                <!-- IT Assignment Actions -->
+                {% if ticket.status.name == 'APPROVED' and (current_user.is_it() or current_user.is_manager() or current_user.is_admin()) %}
+                <div class="card bg-dark mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Assign Ticket</h6>
+                        <form method="POST" action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}">
+                            {{ assign_form.hidden_tag() }}
+                            <div class="mb-3">
+                                {{ assign_form.assignee_id.label(class="form-label") }}
+                                {{ assign_form.assignee_id(class="form-select") }}
+                            </div>
+                            <div class="d-grid">
+                                {{ assign_form.submit(class="btn btn-primary") }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- IT Processing Actions -->
+                {% if ticket.status.name in ['ASSIGNED', 'IN_PROGRESS', 'WAITING_USER'] and ticket.assignee_id == current_user.id or current_user.is_admin() %}
+                <div class="d-grid gap-2 mb-3">
+                    {% if ticket.status.name == 'ASSIGNED' %}
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='start') }}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-play-circle me-1"></i> Start Working on Ticket
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if ticket.status.name == 'IN_PROGRESS' %}
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='wait_user') }}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-hourglass-split me-1"></i> Waiting for User
+                        </button>
+                    </form>
+                    
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='resolve') }}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check2-all me-1"></i> Mark as Resolved
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if ticket.status.name == 'WAITING_USER' %}
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='start') }}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-play-circle me-1"></i> Resume Working
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- User Actions -->
+                {% if ticket.status.name == 'RESOLVED' and (ticket.creator_id == current_user.id or current_user.is_admin()) %}
+                <div class="d-grid gap-2 mb-3">
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='close') }}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i> Close Ticket (Issue Resolved)
+                        </button>
+                    </form>
+                    
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='reopen') }}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reopen Ticket (Issue Not Resolved)
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                
+                {% if ticket.status.name in ['CLOSED', 'REJECTED'] and (ticket.creator_id == current_user.id or current_user.is_admin()) %}
+                <div class="d-grid gap-2 mb-3">
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        {{ action_form.hidden_tag() }}
+                        {{ action_form.ticket_id(value=ticket.id) }}
+                        {{ action_form.action(value='reopen') }}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reopen Ticket
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                
+                <!-- Ticket Information Card -->
+                <div class="card bg-dark mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Ticket Information</h6>
+                        <ul class="list-group list-group-flush bg-dark">
+                            <li class="list-group-item bg-dark d-flex justify-content-between">
+                                <span>Status:</span>
+                                <span class="badge 
+                                    {% if ticket.status.name == 'AWAITING_APPROVAL' %}bg-warning
+                                    {% elif ticket.status.name == 'NEW' %}bg-info
+                                    {% elif ticket.status.name == 'ASSIGNED' %}bg-primary
+                                    {% elif ticket.status.name == 'IN_PROGRESS' %}bg-success
+                                    {% elif ticket.status.name == 'WAITING_USER' %}bg-warning
+                                    {% elif ticket.status.name == 'RESOLVED' %}bg-success
+                                    {% elif ticket.status.name == 'REJECTED' %}bg-danger
+                                    {% elif ticket.status.name == 'CLOSED' %}bg-secondary
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ ticket.status.value }}
+                                </span>
+                            </li>
+                            <li class="list-group-item bg-dark d-flex justify-content-between">
+                                <span>Category:</span>
+                                <span>{{ ticket.category_rel.name }}</span>
+                            </li>
+                            <li class="list-group-item bg-dark d-flex justify-content-between">
+                                <span>Created:</span>
+                                <span>{{ ticket.created_at.strftime('%Y-%m-%d') }}</span>
+                            </li>
+                            <li class="list-group-item bg-dark d-flex justify-content-between">
+                                <span>Time Open:</span>
+                                <span>{{ ((ticket.updated_at if ticket.status.name == 'CLOSED' else now) - ticket.created_at).days }} days</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Format line breaks in descriptions and comments
+    document.addEventListener('DOMContentLoaded', function() {
+        // This is handled by the nl2br filter in Jinja
+    });
+</script>
+{% endblock %}

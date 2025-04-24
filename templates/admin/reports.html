@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - IT Support Tickets{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            <i class="bi bi-graph-up me-2"></i>
+            Ticket Reports
+        </h1>
+        <p class="lead">Overview and statistics for all tickets in the system</p>
+    </div>
+    <div class="col-auto">
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Status Overview Cards -->
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    Tickets by Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for status, count in status_counts.items() %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card bg-dark h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">{{ status }}</h6>
+                                <h3 class="mb-0">{{ count }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3">
+                    <canvas id="statusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Category Stats -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-tags me-2"></i>
+                    Tickets by Category
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive mb-3">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Ticket Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category, count in category_stats %}
+                            <tr>
+                                <td>{{ category }}</td>
+                                <td>{{ count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <canvas id="categoryChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Assignee Stats -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-badge me-2"></i>
+                    Tickets by Assignee
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive mb-3">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Assignee</th>
+                                <th>Ticket Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignee, count in assignee_stats %}
+                            <tr>
+                                <td>{{ assignee }}</td>
+                                <td>{{ count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <canvas id="assigneeChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Time to Resolution -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-hourglass-split me-2"></i>
+                    Resolution Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h3 class="text-center mb-4">Average Resolution Time</h3>
+                        <div class="text-center p-4 border rounded-3 bg-dark">
+                            <div class="display-2 fw-bold mb-2">
+                                {{ "%.1f"|format(avg_resolution_time) }}
+                            </div>
+                            <p class="lead">Hours</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="resolutionChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Status chart
+    const statusLabels = Object.keys({{ status_counts|tojson }});
+    const statusCounts = Object.values({{ status_counts|tojson }});
+    
+    const statusColors = [
+        'rgba(40, 167, 69, 0.7)',  // success (green)
+        'rgba(255, 193, 7, 0.7)',  // warning (yellow)
+        'rgba(23, 162, 184, 0.7)', // info (blue)
+        'rgba(220, 53, 69, 0.7)',  // danger (red)
+        'rgba(108, 117, 125, 0.7)',// secondary (gray)
+        'rgba(111, 66, 193, 0.7)', // purple
+        'rgba(253, 126, 20, 0.7)', // orange
+        'rgba(32, 201, 151, 0.7)'  // teal
+    ];
+    
+    new Chart(document.getElementById('statusChart'), {
+        type: 'pie',
+        data: {
+            labels: statusLabels,
+            datasets: [{
+                data: statusCounts,
+                backgroundColor: statusColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+    
+    // Category chart
+    const categoryData = {{ category_stats|tojson }};
+    const categoryLabels = categoryData.map(item => item[0]);
+    const categoryCounts = categoryData.map(item => item[1]);
+    
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                label: 'Number of Tickets',
+                data: categoryCounts,
+                backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                borderColor: 'rgba(23, 162, 184, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+    
+    // Assignee chart
+    const assigneeData = {{ assignee_stats|tojson }};
+    const assigneeLabels = assigneeData.map(item => item[0]);
+    const assigneeCounts = assigneeData.map(item => item[1]);
+    
+    new Chart(document.getElementById('assigneeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: assigneeLabels,
+            datasets: [{
+                data: assigneeCounts,
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.7)',
+                    'rgba(23, 162, 184, 0.7)',
+                    'rgba(111, 66, 193, 0.7)',
+                    'rgba(253, 126, 20, 0.7)',
+                    'rgba(32, 201, 151, 0.7)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+    
+    // Resolution time chart - since we only have average, display a gauge chart
+    const avgTime = {{ avg_resolution_time }};
+    
+    new Chart(document.getElementById('resolutionChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Average', 'Target SLA'],
+            datasets: [{
+                label: 'Resolution Time (Hours)',
+                data: [avgTime, 24], // Assuming 24 hour SLA as a comparison
+                backgroundColor: [
+                    avgTime <= 24 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)',
+                    'rgba(108, 117, 125, 0.7)'
+                ],
+                borderColor: [
+                    avgTime <= 24 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)',
+                    'rgba(108, 117, 125, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

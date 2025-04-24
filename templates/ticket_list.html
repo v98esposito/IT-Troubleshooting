@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}My Tickets - IT Support Tickets{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            <i class="bi bi-list-ul me-2"></i>
+            Tickets
+        </h1>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('ticket_create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Create New Ticket
+        </a>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">
+            <i class="bi bi-funnel me-2"></i>
+            Filter Tickets
+        </h5>
+        <form method="GET" action="{{ url_for('ticket_list') }}" class="row g-3">
+            <div class="col-md-5">
+                {{ form.status.label(class="form-label") }}
+                {{ form.status(class="form-select") }}
+            </div>
+            <div class="col-md-5">
+                {{ form.category.label(class="form-label") }}
+                {{ form.category(class="form-select") }}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                {{ form.submit(class="btn btn-primary w-100") }}
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if tickets %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-ticket-perforated me-2"></i>
+                Ticket List
+            </h5>
+            <span class="badge bg-primary">{{ tickets|length }} tickets</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Assigned To</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td>#{{ ticket.id }}</td>
+                        <td>{{ ticket.title }}</td>
+                        <td>{{ ticket.category_rel.name }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if ticket.status.name == 'AWAITING_APPROVAL' %}bg-warning
+                                {% elif ticket.status.name == 'NEW' %}bg-info
+                                {% elif ticket.status.name == 'APPROVED' %}bg-info
+                                {% elif ticket.status.name == 'ASSIGNED' %}bg-primary
+                                {% elif ticket.status.name == 'IN_PROGRESS' %}bg-success
+                                {% elif ticket.status.name == 'WAITING_USER' %}bg-warning
+                                {% elif ticket.status.name == 'RESOLVED' %}bg-success
+                                {% elif ticket.status.name == 'REJECTED' %}bg-danger
+                                {% elif ticket.status.name == 'CLOSED' %}bg-secondary
+                                {% else %}bg-secondary{% endif %}">
+                                {{ ticket.status.value }}
+                            </span>
+                        </td>
+                        <td>{{ ticket.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ ticket.assignee.username if ticket.assignee else "-" }}</td>
+                        <td>
+                            <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center p-5">
+        <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+        <h3>No tickets found</h3>
+        <p class="text-muted">There are no tickets matching your criteria.</p>
+        <a href="{{ url_for('ticket_create') }}" class="btn btn-primary mt-2">
+            <i class="bi bi-plus-circle me-1"></i> Create New Ticket
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

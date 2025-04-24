@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60">
+  <!-- Background shape -->
+  <rect x="10" y="10" width="180" height="40" rx="8" fill="#343a40" />
+  
+  <!-- Ticket icon -->
+  <g transform="translate(25, 18) scale(0.8)">
+    <path d="M2 7V17C2 18.1 2.9 19 4 19H20C21.1 19 22 18.1 22 17V7C22 5.9 21.1 5 20 5H4C2.9 5 2 5.9 2 7ZM4 7H20V17H4V7Z" fill="#0d6efd"/>
+    <path d="M6 9H18V10H6V9ZM6 11H18V12H6V11ZM6 13H12V14H6V13Z" fill="#0d6efd"/>
+    <path d="M18 15H15C14.45 15 14 14.55 14 14V13C14 12.45 14.45 12 15 12H18C18.55 12 19 12.45 19 13V14C19 14.55 18.55 15 18 15Z" fill="#20c997"/>
+  </g>
+  
+  <!-- Text: IT Support -->
+  <text x="70" y="30" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff">IT Support</text>
+  
+  <!-- Text: Ticket System -->
+  <text x="70" y="42" font-family="Arial, sans-serif" font-size="12" fill="#20c997">Ticket System</text>
+  
+  <!-- Decorative elements -->
+  <circle cx="175" cy="20" r="4" fill="#20c997" opacity="0.7" />
+  <circle cx="175" cy="40" r="4" fill="#0d6efd" opacity="0.7" />
+</svg>

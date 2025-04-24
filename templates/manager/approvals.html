@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket Approvals - IT Support Tickets{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            <i class="bi bi-check-circle me-2"></i>
+            Pending Approvals
+        </h1>
+        <p class="lead">Tickets waiting for your approval</p>
+    </div>
+</div>
+
+{% if tickets %}
+<div class="row">
+    {% for ticket in tickets %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">#{{ ticket.id }} - {{ ticket.title }}</h5>
+                <span class="badge bg-warning">Awaiting Approval</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Category:</strong> {{ ticket.category_rel.name }}
+                </div>
+                <div class="mb-3">
+                    <strong>Requested by:</strong> {{ ticket.creator.username }} ({{ ticket.creator.department }})
+                </div>
+                <div class="mb-3">
+                    <strong>Requested on:</strong> {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </div>
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <p class="mt-2">{{ ticket.description | nl2br }}</p>
+                </div>
+                
+                {% if ticket.attachments.all() %}
+                <div class="mb-3">
+                    <strong>Attachments:</strong>
+                    <ul class="list-group mt-2">
+                        {% for attachment in ticket.attachments %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center bg-dark">
+                            <span>{{ attachment.filename }}</span>
+                            <a href="{{ url_for('download_file', filename=attachment.file_path) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-download"></i> Download
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye me-1"></i> View Details
+                    </a>
+                    <div class="btn-group">
+                        <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                            <input type="hidden" name="action" value="approve">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i> Approve
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}" class="d-inline ms-2">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                            <input type="hidden" name="action" value="reject">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-x-circle me-1"></i> Reject
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center p-5">
+        <i class="bi bi-check-circle fs-1 text-success mb-3"></i>
+        <h3>No Pending Approvals</h3>
+        <p class="text-muted">There are currently no tickets waiting for your approval.</p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">
+            Return to Dashboard
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

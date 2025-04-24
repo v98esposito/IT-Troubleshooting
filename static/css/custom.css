@@ -1,0 +1,209 @@
+/* IT Support Ticket System - Custom Styles */
+
+/* General styling */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+footer {
+    margin-top: auto;
+}
+
+/* Comment styling */
+.comment-timeline {
+    position: relative;
+    margin-left: 20px;
+}
+
+.comment-timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 2px;
+    background-color: var(--bs-secondary);
+}
+
+.comment-item {
+    position: relative;
+    padding: 1rem 1.5rem;
+    background-color: var(--bs-dark);
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    margin-left: 1.5rem;
+    border-left: 4px solid var(--bs-primary);
+}
+
+.comment-item:before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 1.2rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background-color: var(--bs-primary);
+    border: 2px solid var(--bs-dark);
+    z-index: 1;
+}
+
+.comment-internal {
+    border-left-color: var(--bs-warning);
+}
+
+.comment-internal:before {
+    background-color: var(--bs-warning);
+}
+
+/* Status badge colors */
+.badge-new {
+    background-color: var(--bs-info);
+}
+
+.badge-awaiting-approval {
+    background-color: var(--bs-warning);
+    color: var(--bs-dark);
+}
+
+.badge-approved {
+    background-color: var(--bs-info);
+}
+
+.badge-rejected {
+    background-color: var(--bs-danger);
+}
+
+.badge-assigned {
+    background-color: var(--bs-primary);
+}
+
+.badge-in-progress {
+    background-color: var(--bs-success);
+}
+
+.badge-waiting-user {
+    background-color: var(--bs-warning);
+    color: var(--bs-dark);
+}
+
+.badge-resolved {
+    background-color: var(--bs-success);
+}
+
+.badge-closed {
+    background-color: var(--bs-secondary);
+}
+
+/* Dashboard cards */
+.stat-card {
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Form styling */
+.form-control:focus, .form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+textarea.internal-comment-input {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: var(--bs-warning);
+}
+
+/* Ticket detail page */
+.ticket-info-label {
+    font-weight: bold;
+    color: var(--bs-secondary);
+}
+
+/* Print styles for reports */
+@media print {
+    header, footer, .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background-color: white !important;
+        color: black !important;
+    }
+    
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+    
+    .card-header, .card-body, .card-footer {
+        background-color: white !important;
+        color: black !important;
+    }
+    
+    .text-white {
+        color: black !important;
+    }
+    
+    a {
+        text-decoration: none !important;
+        color: black !important;
+    }
+}
+
+/* Error pages */
+.error-page {
+    padding: 3rem 0;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .comment-item {
+        margin-left: 1rem;
+    }
+    
+    .comment-timeline:before {
+        left: -10px;
+    }
+    
+    .comment-item:before {
+        left: -1.2rem;
+    }
+}
+
+/* File attachment preview */
+.attachment-preview {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 0.25rem;
+    border: 1px solid var(--bs-gray-600);
+}
+
+/* Utility classes */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ticket-description {
+    white-space: pre-line;
+}
