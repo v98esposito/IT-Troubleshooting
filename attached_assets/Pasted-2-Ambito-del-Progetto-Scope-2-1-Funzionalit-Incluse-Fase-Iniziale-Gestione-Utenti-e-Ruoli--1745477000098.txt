@@ -1,0 +1,47 @@
+2. Ambito del Progetto (Scope)
+
+2.1 Funzionalità Incluse (Fase Iniziale):
+
+Gestione Utenti e Ruoli: Creazione e gestione di utenti con ruoli distinti (Utente Finale, Dirigente/Approvatore, Membro Team IT, Amministratore). Autenticazione e gestione dei permessi basati sui ruoli.
+Creazione Ticket: Interfaccia (form web) semplice per gli utenti finali per aprire nuove richieste di supporto.
+Dettagli Ticket: Campi standard del ticket: Titolo, Descrizione, Categoria del Problema, Utente Richiedente, Data Creazione.
+Allegati: Possibilità per l'utente di allegare file (es. screenshot) al ticket in fase di creazione o successivamente tramite commento.
+Workflow di Approvazione Dirigenti: Flusso definito dove specifici ticket (da definire quali, es. richieste hardware/software) necessitano l'approvazione di un Dirigente prima di essere presi in carico dall'IT. Interfaccia dedicata per i Dirigenti per visualizzare e gestire le richieste in attesa di approvazione.
+Assegnazione Ticket: Funzionalità per Dirigenti (dopo approvazione) o Membri IT (se con permessi adeguati) per assegnare i ticket ai membri specifici del team IT.
+Stati del Ticket: Definizione e gestione di stati chiari (es. Nuovo, In Attesa Approvazione, Approvato, Rifiutato, Assegnato, In Lavorazione, In Attesa Utente, Risolto, Chiuso). Transizioni tra stati basate sui ruoli e sul workflow.
+Commenti: Aggiunta di commenti (interni per IT/Dirigenti o visibili all'utente richiedente) ai ticket per comunicazioni e aggiornamenti.
+Notifiche: Invio di notifiche (inizialmente via email) agli utenti e membri del team IT in risposta a eventi chiave (es. ticket creato, stato cambiato, assegnato, commentato, approvato/rifiutato).
+Reporting di Base: Visualizzazione aggregata dei dati dei ticket (es. numero di ticket aperti/chiusi, ticket per categoria, ticket per assegnatario) in forme semplici (tabelle, liste).
+Categorie Problemi: Gestione (da parte dell'Amministratore) di un elenco predefinito di categorie per classificare i ticket.
+2.2 Funzionalità Escluse (Fase Iniziale, Potenziali Evoluzioni Future):
+
+Integrazione con sistemi esterni (gestione asset, sistemi di monitoraggio).
+SLA (Service Level Agreement) tracking e alert complessi.
+Knowledge Base integrata per la risoluzione autonoma degli utenti.
+Automazioni avanzate (es. auto-assegnazione basata sulla categoria).
+Interfaccia mobile nativa (focus sull'applicazione web accessibile da browser mobile).
+Reporting avanzato con grafici interattivi complessi.
+Chatbot o interfacce di AI per la gestione diretta delle richieste.
+3. Workflow del Processo di Ticketing
+
+Il processo principale seguirà questo flusso:
+
+Creazione Ticket: Un Utente Finale incontra un problema e crea un nuovo ticket tramite l'interfaccia web, fornendo dettagli e allegati. Il ticket viene inizialmente impostato come "Nuovo".
+Valutazione/Approvazione (se richiesta): Se il ticket rientra in categorie che richiedono approvazione, il suo stato cambia in "In Attesa Approvazione". Il Dirigente competente riceve una notifica, visualizza il ticket nella sua dashboard e può "Approvare" (stato -> "Approvato") o "Rifiutare" (stato -> "Rifiutato", con notifica all'utente). I ticket che non richiedono approvazione passano direttamente allo stato "Approvato" o "Nuovo/Da Assegnare".
+Assegnazione: Un Dirigente (dopo l'approvazione) o un membro del team IT (con permessi adeguati) assegna il ticket approvato a un Membro Team IT specifico. Lo stato del ticket cambia in "Assegnato". Il Membro IT assegnato riceve una notifica.
+Lavorazione: Il Membro IT assegnato prende in carico il ticket, modificandone lo stato in "In Lavorazione". Comunica con l'utente tramite commenti (se necessario) e allega file. Può cambiare lo stato in "In Attesa Utente" se necessita di informazioni o azioni da parte del richiedente.
+Risoluzione: Una volta risolto il problema, il Membro IT imposta lo stato su "Risolto". L'Utente Finale riceve una notifica.
+Chiusura: L'Utente Finale verifica la risoluzione e può "Chiudere" il ticket. In alternativa, il sistema potrebbe chiudere automaticamente i ticket "Risolti" dopo un certo periodo di tempo. I ticket "Rifiutati" dal Dirigente sono considerati chiusi dal punto di vista del workflow di risoluzione IT.
+4. Ruoli Utente Principali
+
+Utente Finale: Può creare ticket, visualizzare/modificare (limitatamente) i propri ticket, aggiungere commenti, chiudere ticket "Risolti".
+Dirigente / Approvatore: Può visualizzare ticket in attesa di approvazione, approvare o rifiutare ticket, visualizzare i ticket del proprio dipartimento/area, assegnare ticket approvati al team IT.
+Membro Team IT: Può visualizzare i ticket a lui assegnati, aggiornare lo stato dei ticket (in lavorazione, attesa utente, risolto), aggiungere commenti (interni/esterni), gestire allegati, (potenzialmente) assegnare ticket non assegnati o riassegnare.
+Amministratore: Ha accesso completo per la gestione di utenti, ruoli, categorie, impostazioni di sistema, visualizzazione di tutti i ticket e reportistica completa.
+5. Stack Tecnologico Proposto
+
+Linguaggio di Programmazione: Python 3.x
+Framework Web Backend: Django (Fortemente consigliato per la completezza delle funzionalità integrate - ORM, Admin Panel, Autenticazione, ecc. - che accelerano lo sviluppo di un'app con ruoli e database complessi). Alternativa: Flask (più leggero, richiede più integrazioni manuali).
+Database: PostgreSQL o MySQL (scelte robuste per un ambiente multi-utente in produzione). Alternativa per sviluppo/prototipazione rapida: SQLite (incluso in Python, non ideale per produzione multi-utente intensa). Si userà l'ORM del framework (Django ORM o SQLAlchemy con Flask).
+Frontend: HTML, CSS (gestiti tramite il sistema di templating del framework, es. Django Templates o Jinja2 per Flask). Potrebbe essere necessario un minimo di JavaScript per interazioni dinamiche.
+Controllo Versione: Git (Indispensabile per tracciare le modifiche al codice).
