@@ -1,0 +1,30 @@
+Obiettivo di Questa Fase: Implementare la gestione avanzata degli utenti (creazione e assegnazione ruoli da parte di Admin/IT) e sviluppare la dashboard specifica per gli utenti del team IT, consentendo loro di visualizzare i ticket assegnati e aggiornarne lo stato.
+Funzionalità Dettagliate da Implementare (Guida per l'Assistenza AI):
+Per ciascuna funzionalità, specificherò cosa deve essere fatto e come l'AI può essere interrogata per ottenere supporto (codice, struttura, logica).
+1. Implementazione Pannello Avanzato: Creazione Utenti e Assegnazione Ruoli (per Admin e Utenti IT)
+Obiettivo: Creare un'interfaccia o sfruttare quella esistente dove gli utenti con ruolo "Admin" o "Membro Team IT" possano creare nuovi account utente.
+Requisiti:
+L'interfaccia deve permettere di inserire i dati base del nuovo utente (es. nome, email, password o sistema di reset password iniziale).
+Deve essere possibile associare uno dei ruoli "Utente Finale" o "Dirigente/Approvatore" all'utente appena creato tramite un campo selezionabile.
+Solo gli utenti con ruolo "Admin" o "Membro Team IT" devono poter accedere a questa funzionalità. (Definire i permessi specifici: l'Admin può creare utenti con entrambi i ruoli "Utente" e "Dirigente"; l'Utente IT potrebbe essere limitato a creare solo utenti "Utente Finale", o esteso a creare anche Dirigenti se necessario). Decisione da prendere: l'Utente IT può creare anche Dirigenti? Assumiamo sì per flessibilità, ma specificare se diverso.
+Validazione input per garantire che i dati inseriti siano corretti.
+2. Implementazione Dashboard Utente Team IT (Visualizzazione Ticket Assegnati)
+Obiettivo: Creare una pagina dedicata accessibile agli utenti con ruolo "Membro Team IT" che mostri solo i ticket che sono stati assegnati a loro.
+Requisiti:
+Creare una nuova view/pagina nel framework (es. /it/dashboard/).
+Questa pagina deve essere accessibile solo agli utenti loggati con ruolo "Membro Team IT".
+La pagina deve interrogare il database per trovare tutti i ticket il cui campo 'assegnatario' (o equivalente) è impostato sull'utente IT loggato.
+Mostrare i ticket in una lista o tabella, includendo informazioni chiave come Titolo, Richiedente, Stato attuale, Categoria, Data Creazione/Aggiornamento.
+Ordinare i ticket in modo logico (es. per stato, priorità, data aggiornamento).
+3. Implementazione Aggiornamento Stato Ticket da Utente Team IT
+Obiettivo: Permettere all'utente del Team IT assegnato a un ticket di modificarne lo stato direttamente dalla sua dashboard o da una pagina di dettaglio del ticket.
+Requisiti:
+Sulla dashboard IT o su una pagina di dettaglio ticket (da definire, la pagina di dettaglio è più logica), ci devono essere elementi UI (es. bottoni, un menu dropdown) che permettano di cambiare lo stato del ticket.
+Gli stati modificabili dall'utente IT assegnato sono:
+Da "Assegnato" a "In Corso".
+Da "In Corso" a "Risolto", "In Attesa Utente", "Annullato".
+Da "In Attesa Utente" a "In Corso", "Risolto", "Annullato".
+Solo l'utente IT assegnato a quel ticket (o un Amministratore/capo team IT con permessi superiori) deve poter eseguire queste modifiche.
+La modifica dello stato deve essere salvata nel database.
+Potrebbe essere utile registrare nel log (se implementato) chi ha cambiato lo stato e quando.
+Inviare una notifica (es. via email) all'utente richiedente quando lo stato cambia a "Risolto" o "Annullato", e potenzialmente per "In Attesa Utente" o "In Corso".

@@ -85,6 +85,13 @@ def register_routes(app):
     def inject_now():
         return {'now': datetime.now()}
     
+    # Add custom Jinja2 filters
+    @app.template_filter('nl2br')
+    def nl2br_filter(text):
+        if not text:
+            return ""
+        return text.replace('\n', '<br>')
+    
     # Authentication routes
     @app.route('/')
     def index():
@@ -543,21 +550,34 @@ def register_routes(app):
     @app.route('/admin/users')
     @login_required
     def user_list():
-        if not current_user.is_admin():
+        if not current_user.is_admin() and not current_user.is_it():
             abort(403)
             
         users = User.query.order_by(User.username).all()
-        return render_template('admin/users.html', users=users)
+        form = UserManagementForm()
+        return render_template('admin/users.html', users=users, form=form)
 
     @app.route('/admin/users/create', methods=['GET', 'POST'])
     @login_required
     def user_create():
-        if not current_user.is_admin():
+        if not current_user.is_admin() and not current_user.is_it():
             abort(403)
             
         form = UserManagementForm()
         
+        # If IT user is creating, restrict role choices based on requirements
+        # IT users can create both USER and MANAGER roles
+        if current_user.is_it() and not current_user.is_admin():
+            # Restrict to user and manager roles only
+            allowed_roles = [UserRole.USER, UserRole.MANAGER]
+            form.role.choices = [(role.name, role.value) for role in allowed_roles]
+        
         if form.validate_on_submit():
+            # Check if IT staff is trying to create an admin (not allowed)
+            if current_user.is_it() and not current_user.is_admin() and form.role.data == UserRole.ADMIN.name:
+                flash('IT staff cannot create admin users.', 'danger')
+                return redirect(url_for('user_list'))
+                
             user = User(
                 username=form.username.data,
                 email=form.email.data,
@@ -656,7 +676,7 @@ def register_routes(app):
     @app.route('/it/assignments')
     @login_required
     def assignments():
-        if not current_user.is_it():
+        if not current_user.is_it() and not current_user.is_admin():
             abort(403)
         
         # Get unassigned tickets
@@ -668,6 +688,122 @@ def register_routes(app):
         ).order_by(Ticket.created_at).all()
         
         return render_template('it/assignments.html', unassigned_tickets=unassigned_tickets, my_tickets=my_tickets)
+        
+    @app.route('/it/dashboard')
+    @login_required
+    def it_dashboard():
+        # Only IT team can access IT dashboard
+        if not current_user.is_it() and not current_user.is_admin():
+            abort(403)
+        
+        # Get tickets assigned to the current IT user by status
+        assigned_tickets = Ticket.query.filter_by(assignee_id=current_user.id).order_by(Ticket.updated_at.desc()).all()
+        
+        # Group tickets by status
+        tickets_by_status = {
+            'assigned': [],
+            'in_progress': [],
+            'waiting_user': [],
+            'resolved': [],
+            'closed': []
+        }
+        
+        for ticket in assigned_tickets:
+            if ticket.status == TicketStatus.ASSIGNED:
+                tickets_by_status['assigned'].append(ticket)
+            elif ticket.status == TicketStatus.IN_PROGRESS:
+                tickets_by_status['in_progress'].append(ticket)
+            elif ticket.status == TicketStatus.WAITING_USER:
+                tickets_by_status['waiting_user'].append(ticket)
+            elif ticket.status == TicketStatus.RESOLVED:
+                tickets_by_status['resolved'].append(ticket)
+            elif ticket.status == TicketStatus.CLOSED:
+                tickets_by_status['closed'].append(ticket)
+        
+        # Get available tickets that can be assigned
+        available_tickets = Ticket.query.filter(
+            and_(
+                Ticket.assignee_id == None,
+                Ticket.status.in_([TicketStatus.NEW, TicketStatus.APPROVED])
+            )
+        ).order_by(Ticket.created_at.desc()).all()
+        
+        # Statistics for IT dashboard
+        total_assigned = len(assigned_tickets)
+        total_active = len(tickets_by_status['assigned']) + len(tickets_by_status['in_progress']) + len(tickets_by_status['waiting_user'])
+        total_closed = len(tickets_by_status['resolved']) + len(tickets_by_status['closed'])
+        
+        return render_template(
+            'it/dashboard.html',
+            assigned_tickets=assigned_tickets,
+            available_tickets=available_tickets,
+            tickets_by_status=tickets_by_status,
+            total_assigned=total_assigned,
+            total_active=total_active,
+            total_closed=total_closed
+        )
+        
+    @app.route('/it/tickets/<int:ticket_id>/update_status', methods=['POST'])
+    @login_required
+    def it_update_ticket_status(ticket_id):
+        # Only IT team can update ticket status
+        if not current_user.is_it() and not current_user.is_admin():
+            abort(403)
+        
+        ticket = Ticket.query.get_or_404(ticket_id)
+        
+        # Check if the current IT user is assigned to this ticket
+        if ticket.assignee_id != current_user.id and not current_user.is_admin():
+            flash('You can only update tickets assigned to you.', 'danger')
+            return redirect(url_for('it_dashboard'))
+        
+        # Get the new status from the form
+        new_status = request.form.get('status')
+        if not new_status:
+            flash('No status provided.', 'danger')
+            return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+        
+        # Validate the status transition
+        current_status = ticket.status
+        
+        valid_transitions = {
+            TicketStatus.ASSIGNED: [TicketStatus.IN_PROGRESS, TicketStatus.RESOLVED, TicketStatus.CLOSED],
+            TicketStatus.IN_PROGRESS: [TicketStatus.WAITING_USER, TicketStatus.RESOLVED, TicketStatus.CLOSED],
+            TicketStatus.WAITING_USER: [TicketStatus.IN_PROGRESS, TicketStatus.RESOLVED, TicketStatus.CLOSED]
+        }
+        
+        try:
+            new_status_enum = TicketStatus[new_status]
+            
+            if current_status not in valid_transitions or new_status_enum not in valid_transitions[current_status]:
+                flash(f'Invalid status transition from {current_status.value} to {new_status_enum.value}.', 'danger')
+                return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+            
+            # Update the ticket status
+            previous_status = ticket.status
+            ticket.status = new_status_enum
+            ticket.updated_at = datetime.utcnow()
+            db.session.commit()
+            
+            # Add a system comment about the status change
+            comment = Comment(
+                content=f"Ticket status changed from {previous_status.value} to {new_status_enum.value}",
+                ticket_id=ticket_id,
+                author_id=current_user.id,
+                internal_only=True
+            )
+            db.session.add(comment)
+            db.session.commit()
+            
+            # Send notification
+            notify_ticket_status_change(ticket, previous_status)
+            
+            flash(f'Ticket status updated to {new_status_enum.value}.', 'success')
+            
+        except (KeyError, ValueError):
+            flash('Invalid status value.', 'danger')
+        
+        return redirect(url_for('ticket_detail', ticket_id=ticket_id))
 
     # Error handlers
     @app.errorhandler(403)
