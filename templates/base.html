@@ -48,10 +48,27 @@
                             {% endif %}
                             
                             {% if current_user.is_it() %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('assignments') }}">
-                                    <i class="bi bi-briefcase me-1"></i> Assignments
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="itDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-tools me-1"></i> IT Tools
                                 </a>
+                                <ul class="dropdown-menu" aria-labelledby="itDropdown">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('assignments') }}">
+                                            <i class="bi bi-briefcase me-1"></i> Assignments
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('it_dashboard') }}">
+                                            <i class="bi bi-speedometer me-1"></i> IT Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('user_list') }}">
+                                            <i class="bi bi-people me-1"></i> Manage Users
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
                             {% endif %}
                             

@@ -599,7 +599,7 @@ def register_routes(app):
     @app.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
     @login_required
     def user_edit(user_id):
-        if not current_user.is_admin():
+        if not current_user.is_admin() and not current_user.is_it():
             abort(403)
             
         user = User.query.get_or_404(user_id)
@@ -610,7 +610,28 @@ def register_routes(app):
         # Set role to string value
         form.role.data = user.role.name
         
+        # If IT user is editing, restrict role choices based on requirements
+        if current_user.is_it() and not current_user.is_admin():
+            # Restrict editing admin users by IT staff
+            if user.role == UserRole.ADMIN:
+                flash('IT staff cannot edit admin users.', 'danger')
+                return redirect(url_for('user_list'))
+                
+            # Restrict roles to USER and MANAGER only for IT staff
+            allowed_roles = [UserRole.USER, UserRole.MANAGER]
+            form.role.choices = [(role.name, role.value) for role in allowed_roles]
+        
         if form.validate_on_submit():
+            # Prevent IT staff from changing role to admin
+            if current_user.is_it() and not current_user.is_admin() and form.role.data == UserRole.ADMIN.name:
+                flash('IT staff cannot assign admin role.', 'danger')
+                return redirect(url_for('user_list'))
+            
+            # Prevent IT staff from changing role of another IT staff
+            if current_user.is_it() and not current_user.is_admin() and user.role == UserRole.IT and form.role.data != UserRole.IT.name:
+                flash('IT staff cannot change the role of other IT staff members.', 'danger')
+                return redirect(url_for('user_list'))
+                
             user.username = form.username.data
             user.email = form.email.data
             user.role = UserRole[form.role.data]
