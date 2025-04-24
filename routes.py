@@ -392,98 +392,106 @@ def register_routes(app):
     @login_required
     def ticket_action(ticket_id):
         ticket = Ticket.query.get_or_404(ticket_id)
-        form = TicketActionForm()
         
         # Stampare informazioni di debug sui dati ricevuti
         print(f"ACTION form data: {request.form}")
         
-        if form.validate_on_submit():
-            action = form.action.data
-            previous_status = ticket.status
+        # Fix per problemi di null/validazione dei form
+        # Ottieni direttamente l'azione dal form post
+        action = request.form.get('action')
+        
+        if not action:
+            flash('Azione non specificata.', 'danger')
+            return redirect(url_for('ticket_detail', ticket_id=ticket_id))
             
-            print(f"Processing action: {action} for ticket: {ticket_id}")
+        previous_status = ticket.status
+        
+        print(f"Processing action: {action} for ticket: {ticket_id}")
+        
+        # Check permissions based on action and user role
+        if action == 'approve' and ticket.can_be_approved_by(current_user):
+            # Solo approvazione, nel nuovo workflow senza assegnazione diretta
+            ticket.status = TicketStatus.APPROVED
+            ticket.approver_id = current_user.id
             
-            # Check permissions based on action and user role
-            if action == 'approve' and ticket.can_be_approved_by(current_user):
-                # Solo approvazione, nel nuovo workflow senza assegnazione diretta
-                ticket.status = TicketStatus.APPROVED
-                ticket.approver_id = current_user.id
-                
-                # Aggiungi nota di sistema per l'approvazione
-                approval_comment = Comment(
-                    content=f"Ticket approvato da {current_user.username}",
-                    ticket_id=ticket.id,
-                    author_id=current_user.id,
-                    internal_only=True
-                )
-                db.session.add(approval_comment)
-                db.session.commit()
-                
-                flash('Ticket approvato. Ora assegna il ticket a un membro del team IT.', 'success')
-                
-                # Reindirizza direttamente alla pagina di assegnazione 
-                it_users = User.query.filter_by(role=UserRole.IT, is_active=True).all()
-                if not it_users:
-                    flash('Non ci sono utenti IT disponibili per l\'assegnazione.', 'warning')
-                    return redirect(url_for('approvals'))
-                
-                return render_template(
-                    'manager/assign_it_staff.html', 
-                    ticket=ticket,
-                    it_users=it_users
-                )
-                
-            elif action == 'reject' and ticket.can_be_approved_by(current_user):
-                ticket.status = TicketStatus.REJECTED
-                ticket.approver_id = current_user.id
-                
-                # Aggiungi nota di sistema per il rifiuto
-                reject_comment = Comment(
-                    content=f"Ticket rifiutato da {current_user.username}",
-                    ticket_id=ticket.id,
-                    author_id=current_user.id,
-                    internal_only=True
-                )
-                db.session.add(reject_comment)
-                db.session.commit()
-                
-                flash('Ticket rifiutato.', 'danger')
-                
-            elif action == 'start' and (ticket.assignee_id == current_user.id or current_user.is_admin()):
-                ticket.status = TicketStatus.IN_PROGRESS
-                flash('Ticket marked as in progress.', 'success')
-                
-            elif action == 'wait_user' and (ticket.assignee_id == current_user.id or current_user.is_admin()):
-                ticket.status = TicketStatus.WAITING_USER
-                flash('Ticket marked as waiting for user.', 'success')
-                
-            elif action == 'resolve' and (ticket.assignee_id == current_user.id or current_user.is_admin()):
-                ticket.status = TicketStatus.RESOLVED
-                flash('Ticket marked as resolved.', 'success')
-                
-            elif action == 'close' and (ticket.creator_id == current_user.id or current_user.is_admin()):
-                if ticket.status == TicketStatus.RESOLVED:
-                    ticket.status = TicketStatus.CLOSED
-                    flash('Ticket has been closed.', 'success')
-                else:
-                    flash('Ticket must be resolved before closing.', 'warning')
-                    
-            elif action == 'reopen' and (ticket.creator_id == current_user.id or current_user.is_admin()):
-                if ticket.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
-                    ticket.status = TicketStatus.ASSIGNED if ticket.assignee_id else TicketStatus.NEW
-                    flash('Ticket has been reopened.', 'success')
-                else:
-                    flash('Cannot reopen this ticket.', 'warning')
-            
-            else:
-                flash('You do not have permission for this action.', 'danger')
-                return redirect(url_for('ticket_detail', ticket_id=ticket_id))
-            
+            # Aggiungi nota di sistema per l'approvazione
+            approval_comment = Comment(
+                content=f"Ticket approvato da {current_user.username}",
+                ticket_id=ticket.id,
+                author_id=current_user.id,
+                internal_only=True
+            )
+            db.session.add(approval_comment)
             db.session.commit()
             
-            # Send notification for status change
-            if previous_status != ticket.status:
-                notify_ticket_status_change(ticket, previous_status)
+            flash('Ticket approvato. Ora assegna il ticket a un membro del team IT.', 'success')
+            
+            # Reindirizza direttamente alla pagina di assegnazione 
+            it_users = User.query.filter_by(role=UserRole.IT, is_active=True).all()
+            if not it_users:
+                flash('Non ci sono utenti IT disponibili per l\'assegnazione.', 'warning')
+                return redirect(url_for('approvals'))
+            
+            return render_template(
+                'manager/assign_it_staff.html', 
+                ticket=ticket,
+                it_users=it_users
+            )
+            
+        elif action == 'reject' and ticket.can_be_approved_by(current_user):
+            ticket.status = TicketStatus.REJECTED
+            ticket.approver_id = current_user.id
+            
+            # Aggiungi nota di sistema per il rifiuto
+            reject_comment = Comment(
+                content=f"Ticket rifiutato da {current_user.username}",
+                ticket_id=ticket.id,
+                author_id=current_user.id,
+                internal_only=True
+            )
+            db.session.add(reject_comment)
+            db.session.commit()
+            
+            flash('Ticket rifiutato.', 'danger')
+            
+        elif action == 'start' and (ticket.assignee_id == current_user.id or current_user.is_admin()):
+            ticket.status = TicketStatus.IN_PROGRESS
+            flash('Ticket marked as in progress.', 'success')
+            db.session.commit()
+            
+        elif action == 'wait_user' and (ticket.assignee_id == current_user.id or current_user.is_admin()):
+            ticket.status = TicketStatus.WAITING_USER
+            flash('Ticket marked as waiting for user.', 'success')
+            db.session.commit()
+            
+        elif action == 'resolve' and (ticket.assignee_id == current_user.id or current_user.is_admin()):
+            ticket.status = TicketStatus.RESOLVED
+            flash('Ticket marked as resolved.', 'success')
+            db.session.commit()
+            
+        elif action == 'close' and (ticket.creator_id == current_user.id or current_user.is_admin()):
+            if ticket.status == TicketStatus.RESOLVED:
+                ticket.status = TicketStatus.CLOSED
+                flash('Ticket has been closed.', 'success')
+            else:
+                flash('Ticket must be resolved before closing.', 'warning')
+            db.session.commit()
+                
+        elif action == 'reopen' and (ticket.creator_id == current_user.id or current_user.is_admin()):
+            if ticket.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
+                ticket.status = TicketStatus.ASSIGNED if ticket.assignee_id else TicketStatus.NEW
+                flash('Ticket has been reopened.', 'success')
+            else:
+                flash('Cannot reopen this ticket.', 'warning')
+            db.session.commit()
+        
+        else:
+            flash('You do not have permission for this action.', 'danger')
+            return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+        
+        # Send notification for status change
+        if previous_status != ticket.status:
+            notify_ticket_status_change(ticket, previous_status)
         
         return redirect(url_for('ticket_detail', ticket_id=ticket_id))
 
@@ -491,29 +499,48 @@ def register_routes(app):
     @login_required
     def assign_ticket(ticket_id):
         ticket = Ticket.query.get_or_404(ticket_id)
-        form = AssignTicketForm()
         
-        if form.validate_on_submit():
-            if not ticket.can_be_assigned_by(current_user):
-                flash('You do not have permission to assign this ticket.', 'danger')
-                return redirect(url_for('ticket_detail', ticket_id=ticket_id))
-            
-            assignee_id = form.assignee_id.data
-            assignee = User.query.get(assignee_id)
-            
-            if not assignee or assignee.role != UserRole.IT:
-                flash('Invalid assignee selected.', 'danger')
-                return redirect(url_for('ticket_detail', ticket_id=ticket_id))
-            
-            ticket.assignee_id = assignee_id
-            ticket.status = TicketStatus.ASSIGNED
-            db.session.commit()
-            
-            # Send notification
-            notify_ticket_assigned(ticket)
-            
-            flash(f'Ticket assigned to {assignee.username}.', 'success')
+        # Ottieni direttamente l'assegnee_id dai dati del form post
+        assignee_id = request.form.get('assignee_id')
         
+        if not assignee_id:
+            flash('Nessun membro IT selezionato per l\'assegnazione.', 'danger')
+            return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+        
+        if not ticket.can_be_assigned_by(current_user):
+            flash('Non hai i permessi per assegnare questo ticket.', 'danger')
+            return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+        
+        assignee_id = int(assignee_id)  # Converti in intero
+        assignee = User.query.get(assignee_id)
+        
+        if not assignee or assignee.role != UserRole.IT:
+            flash('Membro IT selezionato non valido.', 'danger')
+            return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+        
+        ticket.assignee_id = assignee_id
+        ticket.status = TicketStatus.ASSIGNED
+        db.session.commit()
+        
+        # Aggiungi una nota di sistema per l'assegnazione
+        assign_comment = Comment(
+            content=f"Ticket assegnato a {assignee.username} da {current_user.username}",
+            ticket_id=ticket.id,
+            author_id=current_user.id,
+            internal_only=True
+        )
+        db.session.add(assign_comment)
+        db.session.commit()
+        
+        # Send notification
+        notify_ticket_assigned(ticket)
+        
+        flash(f'Ticket assegnato a {assignee.username}.', 'success')
+        
+        # Se siamo un manager, torniamo alla lista delle approvazioni
+        if current_user.is_manager():
+            return redirect(url_for('approvals'))
+            
         return redirect(url_for('ticket_detail', ticket_id=ticket_id))
 
     @app.route('/uploads/<path:filename>')
@@ -843,13 +870,15 @@ def register_routes(app):
         
         # Check if the current IT user is assigned to this ticket
         if ticket.assignee_id != current_user.id and not current_user.is_admin():
-            flash('You can only update tickets assigned to you.', 'danger')
+            flash('Puoi aggiornare solo i ticket assegnati a te.', 'danger')
             return redirect(url_for('it_dashboard'))
         
         # Get the new status from the form
         new_status = request.form.get('status')
+        notes = request.form.get('notes', '')  # Note opzionali
+        
         if not new_status:
-            flash('No status provided.', 'danger')
+            flash('Stato non specificato.', 'danger')
             return redirect(url_for('ticket_detail', ticket_id=ticket_id))
         
         # Validate the status transition
@@ -865,7 +894,7 @@ def register_routes(app):
             new_status_enum = TicketStatus[new_status]
             
             if current_status not in valid_transitions or new_status_enum not in valid_transitions[current_status]:
-                flash(f'Invalid status transition from {current_status.value} to {new_status_enum.value}.', 'danger')
+                flash(f'Transizione di stato non valida da {current_status.value} a {new_status_enum.value}.', 'danger')
                 return redirect(url_for('ticket_detail', ticket_id=ticket_id))
             
             # Update the ticket status
@@ -874,12 +903,26 @@ def register_routes(app):
             ticket.updated_at = datetime.utcnow()
             db.session.commit()
             
+            # Messaggi personalizzati per diversi stati
+            status_messages = {
+                TicketStatus.IN_PROGRESS: f"Ticket in lavorazione da {current_user.username}",
+                TicketStatus.WAITING_USER: f"In attesa di feedback dall'utente",
+                TicketStatus.RESOLVED: f"Ticket risolto da {current_user.username}",
+                TicketStatus.CLOSED: f"Ticket chiuso da {current_user.username}"
+            }
+            
+            status_message = status_messages.get(new_status_enum, f"Stato del ticket cambiato da {previous_status.value} a {new_status_enum.value}")
+            
             # Add a system comment about the status change
+            comment_content = status_message
+            if notes:
+                comment_content += f"\n\nNote: {notes}"
+                
             comment = Comment(
-                content=f"Ticket status changed from {previous_status.value} to {new_status_enum.value}",
+                content=comment_content,
                 ticket_id=ticket_id,
                 author_id=current_user.id,
-                internal_only=True
+                internal_only=False if new_status == "RESOLVED" or new_status == "CLOSED" else True
             )
             db.session.add(comment)
             db.session.commit()
@@ -887,10 +930,19 @@ def register_routes(app):
             # Send notification
             notify_ticket_status_change(ticket, previous_status)
             
-            flash(f'Ticket status updated to {new_status_enum.value}.', 'success')
+            # Messaggio personalizzato per l'utente
+            user_messages = {
+                TicketStatus.IN_PROGRESS: "Il ticket è ora in lavorazione.",
+                TicketStatus.WAITING_USER: "Il ticket è ora in attesa di feedback dall'utente.",
+                TicketStatus.RESOLVED: "Il ticket è stato risolto. Grazie per la pazienza!",
+                TicketStatus.CLOSED: "Il ticket è stato chiuso."
+            }
+            
+            flash_message = user_messages.get(new_status_enum, f'Stato del ticket aggiornato a {new_status_enum.value}.')
+            flash(flash_message, 'success')
             
         except (KeyError, ValueError):
-            flash('Invalid status value.', 'danger')
+            flash('Valore di stato non valido.', 'danger')
         
         return redirect(url_for('ticket_detail', ticket_id=ticket_id))
 

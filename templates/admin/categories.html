@@ -86,7 +86,7 @@
             </div>
             <form method="POST" action="{{ url_for('category_create') }}" id="categoryForm">
                 <div class="modal-body">
-                    {{ form.hidden_tag() if form }}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
                     <div class="mb-3">
                         <label for="name" class="form-label">Category Name</label>
