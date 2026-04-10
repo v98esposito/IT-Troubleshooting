@@ -23,11 +23,6 @@ Built upon a reliable and high-performance architecture:
 
 Follow these standard steps to clone the repository and start the development server locally.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/v98esposito/IT-Troubleshooting.git
-   cd it-support-ticketing
-   ```
 
 2. **Set up a Virtual Environment:**
    ```bash
