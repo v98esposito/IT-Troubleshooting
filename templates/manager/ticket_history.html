@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Cronologia Ticket — IT Support{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="bi bi-clock-history me-2" style="color:var(--text-muted)"></i>Storico Ticket
+            </h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Visualizza e analizza tutti i ticket del sistema.
+            </p>
+        </div>
+    </div>
+
+    <!-- Filtri -->
+    <div class="card mb-4" style="border-left:3px solid var(--surface-elevated)">
+        <div class="card-body py-3">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="status" class="form-label" style="font-size:0.8rem;font-weight:600;color:var(--text-secondary)">
+                        <i class="bi bi-funnel me-1"></i>Stato
+                    </label>
+                    <select class="form-select form-select-sm" id="status" name="status">
+                        <option value="">Tutti gli stati</option>
+                        {% for status in statuses %}
+                        <option value="{{ status.name }}" {% if request.args.get('status') == status.name %}selected{% endif %}>
+                            {{ status.value }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="category" class="form-label" style="font-size:0.8rem;font-weight:600;color:var(--text-secondary)">
+                        <i class="bi bi-tags me-1"></i>Categoria
+                    </label>
+                    <select class="form-select form-select-sm" id="category" name="category">
+                        <option value="">Tutte le categorie</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if request.args.get('category') == category.id|string %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-action-secondary btn-sm w-100">
+                        <i class="bi bi-search me-1"></i>Applica Filtri
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-list-ul" style="color:var(--text-muted); font-size:.85rem"></i>
+                <h6 class="mb-0 fw-bold" style="font-size:0.85rem">Risultati: {{ tickets|length }}</h6>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if tickets %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titolo</th>
+                            <th>Categoria</th>
+                            <th>Creato da</th>
+                            <th>Assegnato a</th>
+                            <th>Stato</th>
+                            <th>Ultima Modifica</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td><span style="font-size:0.75rem;font-weight:700;color:var(--text-muted)">#{{ ticket.id }}</span></td>
+                            <td style="font-weight:500; font-size:0.875rem">{{ ticket.title }}</td>
+                            <td>
+                                <span style="font-size:0.75rem; background:var(--surface-elevated); padding:.15rem .5rem;
+                                             border-radius:var(--radius-pill); border:1px solid var(--surface-border);
+                                             color:var(--text-secondary)">
+                                    {{ ticket.category_rel.name }}
+                                </span>
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ ticket.creator.username }}</td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">
+                                {% if ticket.assignee %}
+                                {{ ticket.assignee.username }}
+                                {% else %}
+                                <span style="color:var(--text-muted); font-style:italic">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ticket.status.name in ['AWAITING_APPROVAL','AWAITING_DEPT_MANAGER_APPROVAL','AWAITING_IT_MANAGER_APPROVAL'] %}
+                                    <span class="status-badge status-awaiting">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'NEW' %}
+                                    <span class="status-badge status-new">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'APPROVED' %}
+                                    <span class="status-badge status-approved">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'ASSIGNED' %}
+                                    <span class="status-badge status-assigned">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'IN_PROGRESS' %}
+                                    <span class="status-badge status-in-progress">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'WAITING_USER' %}
+                                    <span class="status-badge status-waiting-user">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'RESOLVED' %}
+                                    <span class="status-badge status-resolved">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name in ['REJECTED','REJECTED_BY_DEPT_MANAGER'] %}
+                                    <span class="status-badge status-rejected">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'CLOSED' %}
+                                    <span class="status-badge status-closed">{{ ticket.status.value }}</span>
+                                {% else %}
+                                    <span class="status-badge status-pending">{{ ticket.status.value }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ ticket.updated_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="btn btn-action-secondary btn-sm">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-search" style="font-size:2rem; color:var(--text-muted)"></i>
+                <p class="mt-3 mb-0" style="font-size:0.85rem; color:var(--text-muted)">Nessun ticket corrisponde ai criteri.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

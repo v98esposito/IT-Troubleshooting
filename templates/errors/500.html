@@ -1,20 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}500 Server Error - IT Support Tickets{% endblock %}
+{% block title %}500 Errore Server — IT Support{% endblock %}
 
 {% block content %}
-<div class="container text-center py-5">
-    <div class="error-page">
-        <i class="bi bi-exclamation-triangle display-1 text-danger mb-4"></i>
-        <h1 class="display-4">500 - Server Error</h1>
-        <p class="lead mb-4">Oops! Something went wrong on our server.</p>
-        <p class="text-muted mb-4">We're working to fix the issue. Please try again later or contact the IT department if the problem persists.</p>
-        <div class="mt-4">
-            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
-                <i class="bi bi-house me-1"></i> Return to Dashboard
+<div class="row justify-content-center align-items-center" style="min-height:60vh">
+    <div class="col-md-6 text-center animate-fade-in">
+        <div style="width:96px; height:96px; background:var(--color-danger-soft); border-radius:30px;
+                    display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem;
+                    box-shadow:0 8px 32px rgba(239,68,68,.15)">
+            <i class="bi bi-exclamation-triangle" style="font-size:3.5rem; color:var(--color-danger)"></i>
+        </div>
+
+        <h1 class="display-4 fw-bold mb-2">500</h1>
+        <h4 class="mb-3">Errore Interno del Server</h4>
+
+        <p class="mb-4" style="color:var(--text-secondary); max-width:400px; margin:0 auto">
+            Si è verificato un errore imprevisto. Il nostro team tecnico è stato informato. Riprova più tardi.
+        </p>
+
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-action-primary px-4">
+                <i class="bi bi-house-door me-2"></i>Dashboard
             </a>
-            <a href="{{ url_for('ticket_create') }}" class="btn btn-outline-secondary ms-2">
-                <i class="bi bi-plus-circle me-1"></i> Report This Issue
+            <a href="{{ url_for('ticket_create') }}" class="btn btn-action-secondary px-4">
+                <i class="bi bi-plus-lg me-1"></i>Segnala Problema
             </a>
         </div>
     </div>

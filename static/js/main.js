@@ -9,23 +9,47 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
     
-    // Handle status filter changes - auto-submit form when changed
+    // Client-side filtering per i ticket
     const statusFilter = document.getElementById('status');
     const categoryFilter = document.getElementById('category');
     
-    if (statusFilter) {
-        statusFilter.addEventListener('change', function() {
-            if (this.form) {
-                this.form.submit();
+    function filterTickets() {
+        const rows = document.querySelectorAll('table tbody tr');
+        if (!rows.length) return;
+        
+        const statusVal = statusFilter ? statusFilter.value : 'all';
+        const categoryVal = categoryFilter ? String(categoryFilter.value) : 'all';
+        
+        rows.forEach(row => {
+            const rowStatus = row.getAttribute('data-status');
+            const rowCategory = row.getAttribute('data-category');
+            
+            if (!rowStatus && !rowCategory) return; // ignora righe senza dati
+            
+            const matchStatus = (statusVal === 'all' || rowStatus === statusVal);
+            const matchCategory = (categoryVal === 'all' || rowCategory === categoryVal);
+            
+            if (matchStatus && matchCategory) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
             }
         });
     }
+
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterTickets);
+    }
     
     if (categoryFilter) {
-        categoryFilter.addEventListener('change', function() {
-            if (this.form) {
-                this.form.submit();
-            }
+        categoryFilter.addEventListener('change', filterTickets);
+    }
+    
+    const filterForm = statusFilter ? statusFilter.closest('form') : null;
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            filterTickets();
         });
     }
     

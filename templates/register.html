@@ -1,89 +1,106 @@
 {% extends "base.html" %}
 
-{% block title %}Register - IT Support Tickets{% endblock %}
+{% block title %}Registrazione — IT Support{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3>Register</h3>
+<div class="row justify-content-center py-4">
+    <div class="col-md-7 col-lg-5">
+        
+        <div class="text-center mb-4 animate-fade-in">
+            <div style="width:56px; height:56px; background:var(--color-accent-soft); border-radius:14px;
+                        display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                <i class="bi bi-person-plus-fill fs-2" style="color:var(--color-accent)"></i>
             </div>
-            <div class="card-body">
+            <h2 class="fw-bold mb-1">Crea il tuo account</h2>
+            <p style="color:var(--text-secondary); font-size:0.875rem">
+                Registrati per inviare e gestire richieste di supporto
+            </p>
+        </div>
+
+        <div class="card animate-fade-in" style="animation-delay:0.1s">
+            <div class="card-body p-4 p-sm-5">
                 <form method="POST" action="{{ url_for('register') }}">
                     {{ form.hidden_tag() }}
                     
                     <div class="mb-3">
                         {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control") }}
+                        <div class="input-group">
+                            <span class="input-group-text" style="background:var(--surface-elevated); border-color:rgba(255,255,255,.1); color:var(--text-muted)">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            {{ form.username(class="form-control", placeholder="es. mario.rossi") }}
+                        </div>
                         {% if form.username.errors %}
                             <div class="invalid-feedback d-block">
-                                {% for error in form.username.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                                {% for error in form.username.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
                     </div>
                     
                     <div class="mb-3">
                         {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control") }}
+                        <div class="input-group">
+                            <span class="input-group-text" style="background:var(--surface-elevated); border-color:rgba(255,255,255,.1); color:var(--text-muted)">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            {{ form.email(class="form-control", placeholder="mario.rossi@azienda.it") }}
+                        </div>
                         {% if form.email.errors %}
                             <div class="invalid-feedback d-block">
-                                {% for error in form.email.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
                     </div>
                     
                     <div class="mb-3">
                         {{ form.department.label(class="form-label") }}
-                        {{ form.department(class="form-control") }}
+                        <div class="input-group">
+                            <span class="input-group-text" style="background:var(--surface-elevated); border-color:rgba(255,255,255,.1); color:var(--text-muted)">
+                                <i class="bi bi-building"></i>
+                            </span>
+                            {{ form.department(class="form-select") }}
+                        </div>
                         {% if form.department.errors %}
                             <div class="invalid-feedback d-block">
-                                {% for error in form.department.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                                {% for error in form.department.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
                     </div>
                     
-                    <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
-                        {% if form.password.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.password.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                    <div class="row mb-4">
+                        <div class="col-sm-6 mb-3 mb-sm-0">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control", placeholder="Min. 8 caratteri") }}
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-6">
+                            {{ form.confirm_password.label(class="form-label") }}
+                            {{ form.confirm_password(class="form-control", placeholder="Ripeti password") }}
+                            {% if form.confirm_password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.confirm_password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        {{ form.confirm_password.label(class="form-label") }}
-                        {{ form.confirm_password(class="form-control") }}
-                        {% if form.confirm_password.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.confirm_password.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-primary") }}
+                    <div class="d-grid mt-2">
+                        {{ form.submit(class="btn btn-action-primary", value="Registrati") }}
                     </div>
                 </form>
             </div>
-            <div class="card-footer text-center">
-                <p class="mb-0">
-                    Already have an account? <a href="{{ url_for('login') }}">Login</a>
-                </p>
-            </div>
         </div>
+        
+        <div class="text-center mt-4 animate-fade-in" style="animation-delay:0.2s">
+            <p style="font-size:0.875rem; color:var(--text-secondary)">
+                Hai già un account? <a href="{{ url_for('login') }}" style="color:var(--color-accent); font-weight:600; text-decoration:none">Accedi qui</a>
+            </p>
+        </div>
+        
     </div>
 </div>
 {% endblock %}

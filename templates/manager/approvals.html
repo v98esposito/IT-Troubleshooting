@@ -1,109 +1,253 @@
 {% extends "base.html" %}
 
-{% block title %}Ticket Approvals - IT Support Tickets{% endblock %}
+{% block title %}Approvazioni IT Manager — IT Support{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>
-            <i class="bi bi-check-circle me-2"></i>
-            Approvazioni in Sospeso
-        </h1>
-        <p class="lead">Ticket in attesa della tua approvazione</p>
-    </div>
-</div>
+<div class="animate-fade-in">
 
-<div class="alert alert-info mb-4">
-    <div class="d-flex">
-        <div class="me-3">
-            <i class="bi bi-info-circle-fill fs-3"></i>
-        </div>
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
-            <h5>Nuovo Processo di Approvazione</h5>
-            <p class="mb-0">Quando approvi un ticket, ti verrà richiesto di selezionare un membro del team IT a cui assegnarlo immediatamente. Questa modifica al processo consente una gestione più efficiente dei ticket.</p>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="bi bi-check-circle me-2" style="color:var(--color-warning)"></i>Approvazioni IT Manager
+            </h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Ticket approvati dal Dept. Manager in attesa della tua approvazione finale.
+            </p>
         </div>
+        {% if tickets %}
+        <span class="status-badge status-awaiting" style="font-size:0.82rem; padding:.3rem .8rem">
+            {{ tickets|length }} in attesa
+        </span>
+        {% endif %}
     </div>
-</div>
 
-{% if tickets %}
-<div class="row">
-    {% for ticket in tickets %}
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">#{{ ticket.id }} - {{ ticket.title }}</h5>
-                <span class="badge bg-warning">Awaiting Approval</span>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <strong>Category:</strong> {{ ticket.category_rel.name }}
+    <!-- SEZIONE 1: Da approvare -->
+    {% if tickets %}
+    <div class="row g-4 mb-5">
+        {% for ticket in tickets %}
+        <div class="col-md-6">
+            <div class="card h-100" style="border-left:3px solid var(--color-warning)">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <span style="font-size:0.72rem; font-weight:700; color:var(--text-muted)">#{{ ticket.id }}</span>
+                            <h6 class="mb-0 mt-1 fw-semibold" style="font-size:0.9rem">{{ ticket.title }}</h6>
+                        </div>
+                        <span class="status-badge status-awaiting" style="white-space:nowrap">Attesa IT</span>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <strong>Requested by:</strong> {{ ticket.creator.username }} ({{ ticket.creator.department }})
-                </div>
-                <div class="mb-3">
-                    <strong>Requested on:</strong> {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}
-                </div>
-                <div class="mb-3">
-                    <strong>Description:</strong>
-                    <p class="mt-2">{{ ticket.description | nl2br }}</p>
-                </div>
-                
-                {% if ticket.attachments.all() %}
-                <div class="mb-3">
-                    <strong>Attachments:</strong>
-                    <ul class="list-group mt-2">
+
+                <div class="card-body">
+                    <!-- Meta grid -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="ticket-info-label">Categoria</div>
+                            <span style="font-size:0.8rem; background:var(--surface-elevated); padding:.15rem .5rem;
+                                         border-radius:var(--radius-pill); border:1px solid var(--surface-border); color:var(--text-secondary)">
+                                {{ ticket.category_rel.name }}
+                            </span>
+                        </div>
+                        <div class="col-6">
+                            <div class="ticket-info-label">Creato il</div>
+                            <div style="font-size:0.82rem; color:var(--text-secondary)">{{ ticket.created_at.strftime('%d/%m/%Y') }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ticket-info-label">Richiedente</div>
+                            <div style="font-size:0.82rem; color:var(--text-primary); font-weight:500">
+                                {{ ticket.creator.username }}
+                                {% if ticket.creator.department_rel %}
+                                <span style="color:var(--text-muted)">({{ ticket.creator.department_rel.name }})</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ticket-info-label">Approva. Dipartimento</div>
+                            <div style="font-size:0.82rem">
+                                {% if ticket.dept_manager_approver_id %}
+                                <span style="color:var(--color-success); font-weight:600">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Confermato
+                                </span>
+                                {% else %}
+                                <span style="color:var(--text-muted)">N/A</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Descrizione breve -->
+                    <div>
+                        <div class="ticket-info-label mb-1">Descrizione</div>
+                        <p class="mb-0" style="font-size:0.83rem; color:var(--text-secondary); line-height:1.5">
+                            {{ ticket.description | truncate(150) }}
+                        </p>
+                    </div>
+
+                    <!-- Allegati -->
+                    {% if ticket.attachments.all() %}
+                    <div class="mt-3">
+                        <div class="ticket-info-label mb-1">Allegati</div>
                         {% for attachment in ticket.attachments %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center bg-dark">
-                            <span>{{ attachment.filename }}</span>
-                            <a href="{{ url_for('download_file', filename=attachment.file_path) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-download"></i> Download
+                        <div class="attachment-item">
+                            <i class="bi bi-paperclip" style="color:var(--color-accent)"></i>
+                            <span style="flex:1; font-size:0.82rem">{{ attachment.filename }}</span>
+                            <a href="{{ url_for('download_file', filename=attachment.file_path) }}"
+                               class="btn btn-action-secondary btn-sm">
+                                <i class="bi bi-download"></i>
                             </a>
-                        </li>
+                        </div>
                         {% endfor %}
-                    </ul>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-            </div>
-            <div class="card-footer">
-                <div class="d-flex justify-content-between">
-                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="btn btn-outline-primary">
-                        <i class="bi bi-eye me-1"></i> Visualizza Dettagli
-                    </a>
-                    <div class="btn-group">
-                        <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}" class="d-inline">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
-                            <input type="hidden" name="action" value="approve">
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle me-1"></i> Approva
+
+                <!-- Footer: Azioni -->
+                <div class="card-footer">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <!-- Secondaria: Dettagli -->
+                        <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                           class="btn btn-action-secondary btn-sm">
+                            <i class="bi bi-eye me-1"></i>Dettagli
+                        </a>
+                        <div class="d-flex gap-2">
+                            <!-- Primaria costruttiva: Approva & Assegna -->
+                            <button type="button"
+                                    class="btn btn-action-constructive btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#approveModal{{ ticket.id }}">
+                                <i class="bi bi-check-circle-fill me-1"></i>Approva & Assegna
                             </button>
-                        </form>
-                        <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}" class="d-inline ms-2">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
-                            <input type="hidden" name="action" value="reject">
-                            <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-x-circle me-1"></i> Rifiuta
-                            </button>
-                        </form>
+                            <!-- Distruttiva: Rifiuta -->
+                            <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}"
+                                  onsubmit="return confirm('Rifiutare il ticket #{{ ticket.id }}?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="reject">
+                                <button type="submit" class="btn btn-action-destructive btn-sm">
+                                    <i class="bi bi-x-circle me-1"></i>Rifiuta
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Modal Approva & Assegna -->
+        <div class="modal fade" id="approveModal{{ ticket.id }}" tabindex="-1"
+             aria-labelledby="approveModalLabel{{ ticket.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="approveModalLabel{{ ticket.id }}">
+                            <i class="bi bi-check-circle-fill me-2" style="color:var(--color-success)"></i>
+                            Approva & Assegna — #{{ ticket.id }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                    </div>
+                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="approve">
+                        <div class="modal-body">
+                            <!-- Info ticket -->
+                            <div style="background:var(--surface-elevated); border-radius:var(--radius-md);
+                                         padding:var(--space-md); margin-bottom:var(--space-md);
+                                         border-left:3px solid var(--color-accent)">
+                                <div class="ticket-info-label mb-1">Ticket</div>
+                                <div style="font-weight:600; font-size:0.875rem">{{ ticket.title }}</div>
+                                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:.25rem">
+                                    <i class="bi bi-person me-1"></i>{{ ticket.creator.username }} &nbsp;·&nbsp;
+                                    <i class="bi bi-tag me-1"></i>{{ ticket.category_rel.name }}
+                                </div>
+                            </div>
+
+                            <!-- Info workload -->
+                            <div class="alert alert-info" style="font-size:0.83rem">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Seleziona un membro IT. Il ticket passerà direttamente in stato <strong>Assegnato</strong>.
+                            </div>
+
+                            <!-- Selezione assegnatario -->
+                            <div>
+                                <label for="assignee_{{ ticket.id }}" class="form-label">
+                                    Membro IT <span style="color:var(--color-danger)">*</span>
+                                </label>
+                                <select class="form-select" id="assignee_{{ ticket.id }}" name="assignee_id" required>
+                                    <option value="">— Seleziona un membro del team IT —</option>
+                                    {% for user in it_users %}
+                                    <option value="{{ user.id }}">
+                                        {{ user.username }}
+                                        {% if user.department_rel %}({{ user.department_rel.name }}){% endif %}
+                                        — {{ workload_data[user.id]|default(0) }} ticket attivi
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-action-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="submit" class="btn btn-action-constructive">
+                                <i class="bi bi-check-circle-fill me-2"></i>Conferma Approvazione
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
-{% else %}
-<div class="card">
-    <div class="card-body text-center p-5">
-        <i class="bi bi-check-circle fs-1 text-success mb-3"></i>
-        <h3>No Pending Approvals</h3>
-        <p class="text-muted">There are currently no tickets waiting for your approval.</p>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">
-            Return to Dashboard
-        </a>
+
+    {% else %}
+    <!-- Stato vuoto -->
+    <div class="card mb-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-check-circle-fill display-5" style="color:var(--color-success)"></i>
+            <h5 class="mt-3 mb-1" style="color:var(--text-secondary)">Nessuna approvazione in sospeso</h5>
+            <p class="mb-4" style="font-size:0.875rem; color:var(--text-muted)">
+                Non ci sono ticket in attesa della tua approvazione.
+            </p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-action-secondary">
+                <i class="bi bi-speedometer2 me-1"></i>Torna alla Dashboard
+            </a>
+        </div>
     </div>
+    {% endif %}
+
+    <!-- SEZIONE 2: Approvati ma non ancora assegnati -->
+    {% if unassigned_tickets %}
+    <div class="mb-3">
+        <div style="border-left:3px solid var(--color-accent); padding-left:var(--space-md)">
+            <h5 class="fw-bold mb-1" style="font-size:1rem">
+                <i class="bi bi-person-plus me-2" style="color:var(--color-accent)"></i>Approvati — Attesa Assegnazione
+            </h5>
+            <p class="mb-0" style="font-size:0.83rem; color:var(--text-secondary)">
+                Ticket già approvati ma non ancora assegnati a un membro IT.
+            </p>
+        </div>
+    </div>
+    <div class="row g-3">
+        {% for ticket in unassigned_tickets %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card" style="border-left:3px solid var(--color-accent)">
+                <div class="card-body py-3">
+                    <span style="font-size:0.72rem; font-weight:700; color:var(--text-muted)">#{{ ticket.id }}</span>
+                    <div class="fw-semibold mb-1" style="font-size:0.875rem">{{ ticket.title }}</div>
+                    <div style="font-size:0.8rem; color:var(--text-muted)">
+                        <i class="bi bi-person me-1"></i>{{ ticket.creator.username }}
+                        &nbsp;·&nbsp;
+                        <i class="bi bi-tag me-1"></i>{{ ticket.category_rel.name }}
+                    </div>
+                </div>
+                <div class="card-footer py-2">
+                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                       class="btn btn-action-primary btn-sm w-100">
+                        <i class="bi bi-person-plus me-1"></i>Dettagli & Assegna
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
 </div>
-{% endif %}
 {% endblock %}

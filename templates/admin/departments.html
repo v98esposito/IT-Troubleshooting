@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Dipartimenti — IT Support Admin{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="bi bi-building me-2" style="color:var(--color-info)"></i>Gestione Dipartimenti
+            </h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Crea dipartimenti e associa i manager.
+            </p>
+        </div>
+        <!-- AZIONE PRIMARIA -->
+        <a href="{{ url_for('department_create') }}" class="btn btn-action-primary">
+            <i class="bi bi-plus-lg me-1"></i>Nuovo Dipartimento
+        </a>
+    </div>
+
+    {% if departments %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-semibold" style="font-size:0.85rem">
+                <i class="bi bi-list-ul me-2" style="color:var(--text-muted)"></i>Lista Dipartimenti
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Dipartimento</th>
+                            <th>Descrizione</th>
+                            <th>Manager Attuale</th>
+                            <th>Utenti</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for department in departments %}
+                        <tr>
+                            <td><strong style="font-size:0.9rem">{{ department.name }}</strong></td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ department.description or '—' }}</td>
+                            <td>
+                                {% if department.managed_by %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:24px;height:24px;background:var(--color-success-soft);border-radius:50%;
+                                                display:flex;align-items:center;justify-content:center;
+                                                font-size:0.7rem;font-weight:700;color:var(--color-success)">
+                                        {{ department.managed_by.username[0]|upper }}
+                                    </div>
+                                    <div style="font-size:0.82rem; color:var(--text-primary); font-weight:500">
+                                        {{ department.managed_by.username }}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span style="font-size:0.75rem; font-weight:600; color:var(--color-warning);
+                                             background:rgba(245,158,11,.15); border:1px solid rgba(245,158,11,.25);
+                                             padding:.1rem .45rem; border-radius:var(--radius-pill)">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Nessun Manager
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span style="font-size:0.78rem; font-weight:600; color:var(--color-info);
+                                             background:var(--color-info-soft); padding:.15rem .5rem;
+                                             border-radius:var(--radius-pill)">
+                                    {{ department.users.count() }} utenti
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="{{ url_for('department_edit', department_id=department.id) }}"
+                                       class="btn btn-action-secondary btn-sm" title="Modifica div">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-action-primary btn-sm"
+                                            data-dept-id="{{ department.id }}"
+                                            data-dept-name="{{ department.name }}"
+                                            data-manager-id="{{ department.managed_by.id if department.managed_by else '' }}"
+                                            onclick="openAssignManagerModal(this)">
+                                        <i class="bi bi-person-gear"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-building" style="font-size:2.5rem; color:var(--text-muted)"></i>
+            <h5 class="mt-3 mb-1" style="color:var(--text-secondary)">Nessun dipartimento trovato</h5>
+            <p class="mb-4" style="font-size:0.875rem; color:var(--text-muted)">Non ci sono dipartimenti nel sistema.</p>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Modal Assegna Manager -->
+<div class="modal fade" id="assignManagerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-gear me-2" style="color:var(--color-accent)"></i>Assegna Manager
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <form method="POST" action="{{ url_for('assign_department_manager') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.8rem; color:var(--text-muted)">Dipartimento</label>
+                        <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary)" id="departmentName"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="manager_id" class="form-label">Seleziona Manager</label>
+                        <select class="form-select" id="manager_id" name="manager_id" required>
+                            <option value="">Seleziona un utente...</option>
+                            {% for user in available_managers %}
+                            <option value="{{ user.id }}">{{ user.username }} — {{ user.role.value }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text" style="font-size:0.8rem">L'utente verrà promosso a "Dept Manager".</div>
+                    </div>
+                    <input type="hidden" id="department_id" name="department_id" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-action-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-action-primary">Assegna</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openAssignManagerModal(button) {
+        document.getElementById('departmentName').textContent = button.getAttribute('data-dept-name');
+        document.getElementById('department_id').value = button.getAttribute('data-dept-id');
+        const m = button.getAttribute('data-manager-id');
+        const sel = document.getElementById('manager_id');
+        sel.value = '';
+        if(m) {
+            Array.from(sel.options).forEach(o => { if(o.value === m) o.selected = true; });
+        }
+        new bootstrap.Modal(document.getElementById('assignManagerModal')).show();
+    }
+</script>
+{% endblock %}

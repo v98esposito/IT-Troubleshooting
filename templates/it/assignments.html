@@ -1,150 +1,155 @@
 {% extends "base.html" %}
 
-{% block title %}Ticket Assignments - IT Support Tickets{% endblock %}
+{% block title %}I Miei Incarichi — IT Support{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>
-            <i class="bi bi-briefcase me-2"></i>
-            IT Ticket Assignments
-        </h1>
-    </div>
-</div>
+<div class="animate-fade-in">
 
-<div class="row">
-    <!-- My Assigned Tickets -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-person-check me-2"></i>
-                    My Assigned Tickets
-                </h5>
-                <span class="badge bg-primary">{{ my_tickets|length }}</span>
-            </div>
-            <div class="card-body">
-                {% if my_tickets %}
-                <div class="list-group">
-                    {% for ticket in my_tickets %}
-                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">#{{ ticket.id }} - {{ ticket.title }}</h6>
-                            <span class="badge 
-                                {% if ticket.status.name == 'ASSIGNED' %}bg-primary
-                                {% elif ticket.status.name == 'IN_PROGRESS' %}bg-success
-                                {% elif ticket.status.name == 'WAITING_USER' %}bg-warning
-                                {% else %}bg-secondary{% endif %}">
-                                {{ ticket.status.value }}
-                            </span>
-                        </div>
-                        <p class="mb-1 text-truncate">{{ ticket.description }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small>From: {{ ticket.creator.username }} ({{ ticket.creator.department }})</small>
-                            <small>{{ ticket.created_at.strftime('%Y-%m-%d') }}</small>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center p-4">
-                    <i class="bi bi-clipboard-check text-muted fs-1"></i>
-                    <p class="mt-3">You don't have any assigned tickets at the moment.</p>
-                </div>
-                {% endif %}
-            </div>
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="bi bi-inbox me-2" style="color:var(--color-accent)"></i>I Miei Incarichi
+            </h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Gestisci i ticket assegnati a te e prendi in carico nuovi ticket.
+            </p>
         </div>
     </div>
-    
-    <!-- Unassigned Tickets -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-question-circle me-2"></i>
-                    Unassigned Tickets
-                </h5>
-                <span class="badge bg-info">{{ unassigned_tickets|length }}</span>
-            </div>
-            <div class="card-body">
-                {% if unassigned_tickets %}
-                <div class="list-group">
-                    {% for ticket in unassigned_tickets %}
-                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">#{{ ticket.id }} - {{ ticket.title }}</h6>
-                            <small>{{ ticket.created_at.strftime('%Y-%m-%d') }}</small>
-                        </div>
-                        <p class="mb-1 text-truncate">{{ ticket.description }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge bg-secondary me-1">{{ ticket.category_rel.name }}</span>
-                                <small>From: {{ ticket.creator.username }}</small>
-                            </div>
-                            <form method="POST" action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="assignee_id" value="{{ current_user.id }}">
-                                <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-person-plus me-1"></i> Assign to Me
-                                </button>
-                            </form>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center p-4">
-                    <i class="bi bi-inbox-fill text-success fs-1"></i>
-                    <p class="mt-3">There are no unassigned tickets at the moment. Good job!</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Additional Statistics Section (optional) -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-graph-up me-2"></i>
-                    IT Team Performance
-                </h5>
+    <!-- Stats veloci -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card stat-accent h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:.05em">I Miei Ticket Attivi</h6>
+                    <h3 class="mb-0 fw-bold mt-2" style="color:var(--color-accent)">{{ my_tickets|length }}</h3>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <div class="card bg-dark h-100">
-                            <div class="card-body text-center">
-                                <h6 class="card-title">My Active Tickets</h6>
-                                <h3 class="mb-0">{{ my_tickets|length }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card bg-dark h-100">
-                            <div class="card-body text-center">
-                                <h6 class="card-title">Team Pending Tickets</h6>
-                                <h3 class="mb-0">{{ unassigned_tickets|length }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card bg-dark h-100">
-                            <div class="card-body text-center">
-                                <h6 class="card-title">Average Response Time</h6>
-                                <h3 class="mb-0">
-                                    {% set in_progress = my_tickets|selectattr('status.name', 'equalto', 'IN_PROGRESS')|list %}
-                                    {{ in_progress|length }} hrs
-                                </h3>
-                            </div>
-                        </div>
-                    </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card stat-info h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:.05em">Ticket Non Assegnati</h6>
+                    <h3 class="mb-0 fw-bold mt-2" style="color:var(--color-info)">{{ unassigned_tickets|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card stat-success h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:.05em">Ticket in Lavorazione (Team)</h6>
+                    <h3 class="mb-0 fw-bold mt-2" style="color:var(--color-success)">
+                        {% set in_progress = my_tickets|selectattr('status.name', 'equalto', 'IN_PROGRESS')|list %}
+                        {{ in_progress|length }}
+                    </h3>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row g-4">
+        <!-- I Miei Ticket -->
+        <div class="col-lg-6">
+            <div class="card h-100" style="border-top:3px solid var(--color-accent)">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-person-check" style="color:var(--color-accent)"></i>
+                        <h6 class="mb-0 fw-semibold">Assegnati a me</h6>
+                    </div>
+                    <span class="status-badge status-assigned">{{ my_tickets|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if my_tickets %}
+                    <div class="list-group list-group-flush">
+                        {% for ticket in my_tickets %}
+                        <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="list-group-item list-group-item-action px-4 py-3">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                <div>
+                                    <span style="font-size:0.72rem; font-weight:700; color:var(--text-muted)">#{{ ticket.id }}</span>
+                                    <h6 class="mb-0 fw-semibold" style="font-size:0.875rem">{{ ticket.title }}</h6>
+                                </div>
+                                {% if ticket.status.name == 'ASSIGNED' %}
+                                <span class="status-badge status-assigned">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'IN_PROGRESS' %}
+                                <span class="status-badge status-in-progress">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'WAITING_USER' %}
+                                <span class="status-badge status-waiting-user">{{ ticket.status.value }}</span>
+                                {% else %}
+                                <span class="status-badge status-pending">{{ ticket.status.value }}</span>
+                                {% endif %}
+                            </div>
+                            <p class="mb-2 text-truncate" style="font-size:0.8rem; color:var(--text-muted)">{{ ticket.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center" style="font-size:0.75rem; color:var(--text-secondary)">
+                                <span><i class="bi bi-person me-1"></i>{{ ticket.creator.username }} {% if ticket.creator.department_rel %}({{ ticket.creator.department_rel.name }}){% endif %}</span>
+                                <span><i class="bi bi-calendar3 me-1"></i>{{ ticket.created_at.strftime('%d/%m/%Y') }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5">
+                        <i class="bi bi-emoji-smile" style="font-size:2rem; color:var(--text-muted)"></i>
+                        <p class="mt-3 mb-0" style="font-size:0.85rem; color:var(--text-secondary)">Nessun ticket assegnato a te al momento.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ticket Non Assegnati -->
+        <div class="col-lg-6">
+            <div class="card h-100" style="border-top:3px solid var(--color-info)">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-inbox" style="color:var(--color-info)"></i>
+                        <h6 class="mb-0 fw-semibold">Disponibili nel Team</h6>
+                    </div>
+                    <span class="status-badge status-new">{{ unassigned_tickets|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if unassigned_tickets %}
+                    <div class="list-group list-group-flush">
+                        {% for ticket in unassigned_tickets %}
+                        <div class="list-group-item px-4 py-3">
+                            <div class="d-flex w-100 justify-content-between align-items-start mb-1">
+                                <div>
+                                    <span style="font-size:0.72rem; font-weight:700; color:var(--text-muted)">#{{ ticket.id }}</span>
+                                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="d-block fw-semibold" style="font-size:0.875rem; color:var(--text-primary); text-decoration:none">
+                                        {{ ticket.title }}
+                                    </a>
+                                </div>
+                                <span style="font-size:0.7rem; color:var(--text-muted)">{{ ticket.created_at.strftime('%d/%m/%Y') }}</span>
+                            </div>
+                            <p class="mb-2 text-truncate" style="font-size:0.8rem; color:var(--text-muted)">{{ ticket.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div style="font-size:0.75rem; color:var(--text-secondary)">
+                                    <span style="background:var(--surface-elevated); padding:.1rem .45rem; border-radius:var(--radius-pill); border:1px solid var(--surface-border)">
+                                        {{ ticket.category_rel.name }}
+                                    </span>
+                                    <span class="ms-2"><i class="bi bi-person me-1"></i>{{ ticket.creator.username }}</span>
+                                </div>
+                                <form method="POST" action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="assignee_id" value="{{ current_user.id }}">
+                                    <button type="submit" class="btn btn-action-primary btn-sm">
+                                        <i class="bi bi-person-plus me-1"></i>Prendi
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5">
+                        <i class="bi bi-inbox-fill" style="font-size:2rem; color:var(--color-success)"></i>
+                        <p class="mt-3 mb-0" style="font-size:0.85rem; color:var(--text-secondary)">Non ci sono ticket in attesa di assegnazione. Ottimo lavoro!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

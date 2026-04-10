@@ -1,50 +1,73 @@
 {% extends "base.html" %}
 
-{% block title %}Login - IT Support Tickets{% endblock %}
+{% block title %}Accesso — IT Support{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3>Login</h3>
+<div class="row justify-content-center align-items-center" style="min-height:70vh">
+    <div class="col-md-5 col-lg-4">
+        
+        <div class="text-center mb-4 animate-fade-in">
+            <div style="width:64px; height:64px; background:var(--color-accent); border-radius:16px;
+                        display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;
+                        box-shadow:var(--shadow-md)">
+                <i class="bi bi-ticket-perforated-fill text-white fs-1"></i>
             </div>
-            <div class="card-body">
+            <h2 class="fw-bold mb-1">Bentornato</h2>
+            <p style="color:var(--text-secondary); font-size:0.875rem">
+                Accedi al sistema di supporto IT
+            </p>
+        </div>
+
+        <div class="card animate-fade-in" style="animation-delay:0.1s">
+            <div class="card-body p-4 p-sm-5">
                 <form method="POST" action="{{ url_for('login') }}">
                     {{ form.hidden_tag() }}
-                    <div class="mb-3">
+                    
+                    <div class="mb-4">
                         {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control") }}
+                        <div class="input-group">
+                            <span class="input-group-text" style="background:var(--surface-elevated); border-color:rgba(255,255,255,.1); color:var(--text-muted)">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            {{ form.email(class="form-control", placeholder="es. mario.rossi@azienda.it") }}
+                        </div>
                         {% if form.email.errors %}
                             <div class="invalid-feedback d-block">
-                                {% for error in form.email.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
                     </div>
-                    <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
+                    
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-baseline mb-1">
+                            {{ form.password.label(class="form-label mb-0") }}
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text" style="background:var(--surface-elevated); border-color:rgba(255,255,255,.1); color:var(--text-muted)">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            {{ form.password(class="form-control", placeholder="Inserisci la tua password") }}
+                        </div>
                         {% if form.password.errors %}
                             <div class="invalid-feedback d-block">
-                                {% for error in form.password.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                                {% for error in form.password.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
                     </div>
-                    <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-primary") }}
+                    
+                    <div class="d-grid mt-4 pt-2">
+                        {{ form.submit(class="btn btn-action-primary", value="Accedi") }}
                     </div>
                 </form>
             </div>
-            <div class="card-footer text-center">
-                <p class="mb-0">
-                    Don't have an account? <a href="{{ url_for('register') }}">Register</a>
-                </p>
-            </div>
         </div>
+        
+        <div class="text-center mt-4 animate-fade-in" style="animation-delay:0.2s">
+            <p style="font-size:0.875rem; color:var(--text-secondary)">
+                Non hai un account? <a href="{{ url_for('register') }}" style="color:var(--color-accent); font-weight:600; text-decoration:none">Registrati ora</a>
+            </p>
+        </div>
+        
     </div>
 </div>
 {% endblock %}

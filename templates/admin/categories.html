@@ -1,116 +1,136 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Categories - IT Support Tickets{% endblock %}
+{% block title %}Gestione Categorie — IT Support Admin{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>
-            <i class="bi bi-tags me-2"></i>
-            Manage Categories
-        </h1>
-    </div>
-    <div class="col-auto">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#categoryModal">
-            <i class="bi bi-plus-circle me-1"></i> Add New Category
+<div class="animate-fade-in">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="bi bi-tags me-2" style="color:var(--color-warning)"></i>Gestione Categorie
+            </h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Crea e gestisci le categorie dei ticket.
+            </p>
+        </div>
+        <button type="button" class="btn btn-action-primary" data-bs-toggle="modal" data-bs-target="#categoryModal">
+            <i class="bi bi-plus-lg me-1"></i>Nuova Categoria
         </button>
     </div>
-</div>
 
-{% if categories %}
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="bi bi-list-ul me-2"></i>
-            Category List
-        </h5>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Requires Approval</th>
-                        <th>Tickets</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for category in categories %}
-                    <tr>
-                        <td>{{ category.name }}</td>
-                        <td>{{ category.description }}</td>
-                        <td>
-                            {% if category.requires_approval %}
-                            <span class="badge bg-warning">Yes</span>
-                            {% else %}
-                            <span class="badge bg-secondary">No</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ category.tickets.count() }}</td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-primary" 
-                                    onclick="editCategory({{ category.id }}, '{{ category.name }}', '{{ category.description }}', {{ 'true' if category.requires_approval else 'false' }})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    {% if categories %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-semibold" style="font-size:0.85rem">
+                <i class="bi bi-list-ul me-2" style="color:var(--text-muted)"></i>Lista Categorie
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrizione</th>
+                            <th>Richiede Approvazione</th>
+                            <th>Ticket Associati</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr>
+                            <td><strong style="font-size:0.9rem">{{ category.name }}</strong></td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ category.description }}</td>
+                            <td>
+                                {% if category.requires_approval %}
+                                <span style="font-size:0.75rem; font-weight:600; color:var(--color-warning);
+                                             background:rgba(245,158,11,.15); border:1px solid rgba(245,158,11,.25);
+                                             padding:.1rem .45rem; border-radius:var(--radius-pill)">
+                                    <i class="bi bi-lock-fill me-1"></i>Sì
+                                </span>
+                                {% else %}
+                                <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);
+                                             background:var(--surface-elevated); border:1px solid var(--surface-border);
+                                             padding:.1rem .45rem; border-radius:var(--radius-pill)">
+                                    No
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span style="font-size:0.78rem; font-weight:600; color:var(--color-info);
+                                             background:var(--color-info-soft); padding:.15rem .5rem;
+                                             border-radius:var(--radius-pill)">
+                                    {{ category.tickets.count() }} ticket
+                                </span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-action-secondary btn-sm"
+                                    onclick="editCategory({{ category.id }}, '{{ category.name }}', '{{ category.description }}', {{ 'true' if category.requires_approval else 'false' }})"
+                                    title="Modifica">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-{% else %}
-<div class="card">
-    <div class="card-body text-center p-5">
-        <i class="bi bi-tags fs-1 text-muted mb-3"></i>
-        <h3>No categories found</h3>
-        <p class="text-muted">There are no categories in the system yet.</p>
-        <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#categoryModal">
-            <i class="bi bi-plus-circle me-1"></i> Add Your First Category
-        </button>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-tags" style="font-size:2.5rem; color:var(--text-muted)"></i>
+            <h5 class="mt-3 mb-1" style="color:var(--text-secondary)">Nessuna categoria trovata</h5>
+            <p class="mb-4" style="font-size:0.875rem; color:var(--text-muted)">Non ci sono ancora categorie nel
+                sistema.</p>
+            <button type="button" class="btn btn-action-primary" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                <i class="bi bi-plus-lg me-1"></i>Crea la prima categoria
+            </button>
+        </div>
     </div>
-</div>
-{% endif %}
+    {% endif %}
 
-<!-- Category Modal -->
-<div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+</div>
+
+<!-- Modal Categoria -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="categoryModalLabel">Add New Category</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="categoryModalLabel">Nuova Categoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
             <form method="POST" action="{{ url_for('category_create') }}" id="categoryForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
                     <div class="mb-3">
-                        <label for="name" class="form-label">Category Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                        <label for="name" class="form-label">Nome Categoria</label>
+                        <input type="text" class="form-control" id="name" name="name" required
+                            placeholder="Es. Hardware">
                     </div>
-                    
                     <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        <label for="description" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"
+                            placeholder="Breve descrizione..."></textarea>
                     </div>
-                    
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="requires_approval" name="requires_approval">
-                        <label class="form-check-label" for="requires_approval">Requires Manager Approval</label>
-                        <div class="form-text">
-                            If checked, tickets in this category will require manager approval before being assigned to IT staff.
+                    <div class="mb-3 form-check p-3"
+                        style="background:rgba(245,158,11,.08); border-radius:var(--radius-md); border:1px solid rgba(245,158,11,.2)">
+                        <input type="checkbox" class="form-check-input ms-1" id="requires_approval"
+                            name="requires_approval">
+                        <label class="form-check-label fw-bold ms-1" for="requires_approval">Richiede Approvazione
+                            Manager</label>
+                        <div class="form-text" style="font-size:0.75rem; color:var(--text-muted); margin-left:1.5rem">
+                            I ticket in questa categoria richiederanno l'approvazione del manager di dipartimento.
                         </div>
                     </div>
-                    
                     <input type="hidden" id="categoryId" name="category_id" value="">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Category</button>
+                    <button type="button" class="btn btn-action-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-action-primary">Salva Categoria</button>
                 </div>
             </form>
         </div>
@@ -121,25 +141,19 @@
 {% block scripts %}
 <script>
     function editCategory(id, name, description, requiresApproval) {
-        // Update form action
         document.getElementById('categoryForm').action = '/admin/categories/' + id + '/edit';
-        
-        // Fill form fields
-        document.getElementById('categoryModalLabel').textContent = 'Edit Category';
+        document.getElementById('categoryModalLabel').textContent = 'Modifica Categoria';
         document.getElementById('name').value = name;
         document.getElementById('description').value = description;
         document.getElementById('requires_approval').checked = requiresApproval;
         document.getElementById('categoryId').value = id;
-        
-        // Show modal
         new bootstrap.Modal(document.getElementById('categoryModal')).show();
     }
-    
-    // Reset form when modal is hidden
+
     document.getElementById('categoryModal').addEventListener('hidden.bs.modal', function () {
         document.getElementById('categoryForm').reset();
         document.getElementById('categoryForm').action = "{{ url_for('category_create') }}";
-        document.getElementById('categoryModalLabel').textContent = 'Add New Category';
+        document.getElementById('categoryModalLabel').textContent = 'Nuova Categoria';
         document.getElementById('categoryId').value = '';
     });
 </script>

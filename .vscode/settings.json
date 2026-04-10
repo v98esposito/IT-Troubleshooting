@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:IT_Ticket}/instance/ticketing.db",
+            "name": "db_it"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}

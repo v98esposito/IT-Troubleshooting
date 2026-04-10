@@ -1,88 +1,149 @@
 {% extends "base.html" %}
 
-{% block title %}Create Ticket - IT Support Tickets{% endblock %}
+{% block title %}Crea Ticket — IT Support{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8 offset-lg-2">
-        <div class="card">
-            <div class="card-header">
-                <h3>
-                    <i class="bi bi-plus-circle me-2"></i>
-                    Create New Support Ticket
-                </h3>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('ticket_create') }}" enctype="multipart/form-data">
-                    {{ form.hidden_tag() }}
-                    
-                    <div class="mb-3">
-                        {{ form.title.label(class="form-label") }}
-                        {{ form.title(class="form-control") }}
-                        {% if form.title.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.title.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        {{ form.category_id.label(class="form-label") }}
-                        {{ form.category_id(class="form-select") }}
-                        {% if form.category_id.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.category_id.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        {{ form.description.label(class="form-label") }}
-                        {{ form.description(class="form-control", rows=5) }}
-                        {% if form.description.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.description.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        <div class="form-text">
-                            Please provide detailed information about your issue including steps to reproduce, error messages, and any other relevant details.
+<div class="animate-fade-in">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Nuovo Ticket</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:32px;height:32px;background:var(--color-accent-soft);border-radius:var(--radius-md);
+                                    display:flex;align-items:center;justify-content:center">
+                            <i class="bi bi-plus-lg" style="color:var(--color-accent)"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold" style="font-size:1rem">Nuova Richiesta di Supporto</h5>
+                            <p class="mb-0" style="font-size:0.75rem; color:var(--text-muted)">
+                                Compila tutti i campi per inviare la tua segnalazione
+                            </p>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        {{ form.attachment.label(class="form-label") }}
-                        {{ form.attachment(class="form-control") }}
-                        {% if form.attachment.errors %}
+                </div>
+
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('ticket_create') }}" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-4">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control", placeholder="Es. Impossibile accedere alla stampante di rete") }}
+                            {% if form.title.errors %}
                             <div class="invalid-feedback d-block">
-                                {% for error in form.attachment.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                                {% for error in form.title.errors %}{{ error }}{% endfor %}
                             </div>
-                        {% endif %}
-                        <div class="form-text">
-                            You can attach screenshots, error messages, or other relevant files (JPG, PNG, PDF, DOC, TXT). Max size: 16MB.
+                            {% endif %}
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="alert alert-info">
+
+                        <div class="mb-4">
+                            {{ form.category_id.label(class="form-label") }}
+                            {{ form.category_id(class="form-select") }}
+                            {% if form.category_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.category_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Box Informativo Categoria -->
+                            <div id="category-info-box" class="alert mt-3 mb-0 d-flex align-items-start gap-2 shadow-sm" style="display: none; transition: opacity 0.3s ease-in-out; opacity: 0; background: var(--surface-card); border: 1px solid var(--surface-border); border-left: 4px solid var(--color-accent);">
+                                <i class="bi bi-info-circle flex-shrink-0 mt-1" style="color: var(--color-accent);"></i>
+                                <div id="category-info-text" style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=6,
+                                placeholder="Descrivi il problema in dettaglio:\n- Cosa stavi facendo quando si è presentato?\n- Messaggi di errore visualizzati?\n- Da quando si verifica?") }}
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text" style="font-size:0.78rem">
+                                Più dettagli fornisci, più velocemente potremo aiutarti.
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.attachment.label(class="form-label") }}
+                            {{ form.attachment(class="form-control") }}
+                            {% if form.attachment.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.attachment.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text" style="font-size:0.78rem">
+                                <i class="bi bi-paperclip me-1"></i>
+                                Formati supportati: JPG, PNG, PDF, DOC, TXT. Dimensione massima: 16MB.
+                            </div>
+                        </div>
+
+                        <!-- Info approvazione -->
+                        <div class="alert alert-info mb-4" style="font-size:0.83rem">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>Note:</strong> Some ticket categories require manager approval before being assigned to IT staff.
+                            Alcune categorie richiedono l'approvazione del manager prima di essere assegnate allo staff IT.
                         </div>
-                    </div>
-                    
-                    <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-primary") }}
-                    </div>
-                </form>
+
+                        <div class="d-flex justify-content-between align-items-center gap-3">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-action-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Annulla
+                            </a>
+                            {{ form.submit(class="btn btn-action-primary") }}
+                        </div>
+                    </form>
+                </div>
             </div>
+
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const categoryDescriptions = {{ categories_dict | tojson | safe }};
+    const categorySelect = document.getElementById('category_id');
+    const infoBox = document.getElementById('category-info-box');
+    const infoText = document.getElementById('category-info-text');
+
+    if (categorySelect && infoBox && infoText) {
+        function updateCategoryInfo() {
+            const selectedId = categorySelect.value;
+            const desc = categoryDescriptions[selectedId];
+            
+            if (desc && desc.trim() !== '') {
+                infoText.textContent = desc;
+                infoBox.style.display = 'flex';
+                // Trigger reflow per abilitare la transizione
+                void infoBox.offsetWidth;
+                infoBox.style.opacity = '1';
+            } else {
+                infoBox.style.opacity = '0';
+                setTimeout(() => {
+                    // Controlla che non sia stato ri-attivato nel frattempo
+                    if (infoBox.style.opacity === '0') {
+                        infoBox.style.display = 'none';
+                    }
+                }, 300);
+            }
+        }
+        
+        categorySelect.addEventListener('change', updateCategoryInfo);
+        updateCategoryInfo();
+    }
+});
+</script>
 {% endblock %}

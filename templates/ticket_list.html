@@ -1,115 +1,157 @@
 {% extends "base.html" %}
 
-{% block title %}My Tickets - IT Support Tickets{% endblock %}
+{% block title %}Ticket — IT Support{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>
-            <i class="bi bi-list-ul me-2"></i>
-            Tickets
-        </h1>
-    </div>
-    <div class="col-auto">
-        <a href="{{ url_for('ticket_create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Create New Ticket
+<div class="animate-fade-in">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1"><i class="bi bi-list-ul me-2" style="color:var(--color-accent)"></i>I Tickets</h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Visualizza e filtra tutte le richieste di supporto.
+            </p>
+        </div>
+        <a href="{{ url_for('ticket_create') }}" class="btn btn-action-primary" id="ticket-list-new">
+            <i class="bi bi-plus-lg me-1"></i>Nuovo Ticket
         </a>
     </div>
-</div>
 
-<!-- Filter Form -->
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">
-            <i class="bi bi-funnel me-2"></i>
-            Filter Tickets
-        </h5>
-        <form method="GET" action="{{ url_for('ticket_list') }}" class="row g-3">
-            <div class="col-md-5">
-                {{ form.status.label(class="form-label") }}
-                {{ form.status(class="form-select") }}
-            </div>
-            <div class="col-md-5">
-                {{ form.category.label(class="form-label") }}
-                {{ form.category(class="form-select") }}
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                {{ form.submit(class="btn btn-primary w-100") }}
-            </div>
-        </form>
-    </div>
-</div>
-
-{% if tickets %}
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="bi bi-ticket-perforated me-2"></i>
-                Ticket List
-            </h5>
-            <span class="badge bg-primary">{{ tickets|length }} tickets</span>
+    <!-- Filtri -->
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+            <i class="bi bi-funnel" style="color:var(--color-accent); font-size:.85rem"></i>
+            <h6 class="mb-0" style="font-size:0.85rem; font-weight:600">Filtra Tickets</h6>
+        </div>
+        <div class="card-body py-3">
+            <form method="GET" action="{{ url_for('ticket_list') }}" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    {{ form.status.label(class="form-label") }}
+                    {{ form.status(class="form-select form-select-sm") }}
+                </div>
+                <div class="col-md-5">
+                    {{ form.category.label(class="form-label") }}
+                    {{ form.category(class="form-select form-select-sm") }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.submit(class="btn btn-action-primary btn-sm w-100") }}
+                </div>
+            </form>
         </div>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Title</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Assigned To</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ticket in tickets %}
-                    <tr>
-                        <td>#{{ ticket.id }}</td>
-                        <td>{{ ticket.title }}</td>
-                        <td>{{ ticket.category_rel.name }}</td>
-                        <td>
-                            <span class="badge 
-                                {% if ticket.status.name == 'AWAITING_APPROVAL' %}bg-warning
-                                {% elif ticket.status.name == 'NEW' %}bg-info
-                                {% elif ticket.status.name == 'APPROVED' %}bg-info
-                                {% elif ticket.status.name == 'ASSIGNED' %}bg-primary
-                                {% elif ticket.status.name == 'IN_PROGRESS' %}bg-success
-                                {% elif ticket.status.name == 'WAITING_USER' %}bg-warning
-                                {% elif ticket.status.name == 'RESOLVED' %}bg-success
-                                {% elif ticket.status.name == 'REJECTED' %}bg-danger
-                                {% elif ticket.status.name == 'CLOSED' %}bg-secondary
-                                {% else %}bg-secondary{% endif %}">
-                                {{ ticket.status.value }}
-                            </span>
-                        </td>
-                        <td>{{ ticket.created_at.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ ticket.assignee.username if ticket.assignee else "-" }}</td>
-                        <td>
-                            <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-primary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+    {% if tickets %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-ticket-perforated" style="color:var(--color-accent); font-size:.85rem"></i>
+                <h6 class="mb-0 fw-bold" style="font-size:0.85rem">Lista Ticket</h6>
+            </div>
+            <span style="font-size:0.78rem; font-weight:600;
+                         background:var(--surface-elevated); padding:.2rem .6rem;
+                         border-radius:var(--radius-pill); color:var(--text-secondary);
+                         border:1px solid var(--surface-border)">
+                {{ tickets|length }} ticket{% if tickets|length != 1 %}s{% endif %}
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titolo</th>
+                            <th>Categoria</th>
+                            <th>Stato</th>
+                            <th>Creato</th>
+                            <th>Assegnato a</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr data-status="{{ ticket.status.name }}" data-category="{{ ticket.category_id }}">
+                            <td>
+                                <span style="font-size:0.78rem; font-weight:700; color:var(--text-muted)">#{{ ticket.id }}</span>
+                            </td>
+                            <td>
+                                <span style="font-weight:500; font-size:0.875rem">{{ ticket.title }}</span>
+                            </td>
+                            <td>
+                                <span style="font-size:0.78rem; background:var(--surface-elevated);
+                                             padding:.15rem .5rem; border-radius:var(--radius-pill);
+                                             border:1px solid var(--surface-border); color:var(--text-secondary)">
+                                    {{ ticket.category_rel.name }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if ticket.status.name in ['AWAITING_APPROVAL','AWAITING_DEPT_MANAGER_APPROVAL','AWAITING_IT_MANAGER_APPROVAL'] %}
+                                <span class="status-badge status-awaiting">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'NEW' %}
+                                <span class="status-badge status-new">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'APPROVED' %}
+                                <span class="status-badge status-approved">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'ASSIGNED' %}
+                                <span class="status-badge status-assigned">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'IN_PROGRESS' %}
+                                <span class="status-badge status-in-progress">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'WAITING_USER' %}
+                                <span class="status-badge status-waiting-user">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'RESOLVED' %}
+                                <span class="status-badge status-resolved">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name in ['REJECTED','REJECTED_BY_DEPT_MANAGER'] %}
+                                <span class="status-badge status-rejected">{{ ticket.status.value }}</span>
+                                {% elif ticket.status.name == 'CLOSED' %}
+                                <span class="status-badge status-closed">{{ ticket.status.value }}</span>
+                                {% else %}
+                                <span class="status-badge status-pending">{{ ticket.status.value }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">
+                                {{ ticket.created_at.strftime('%d/%m/%Y') }}
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">
+                                {% if ticket.assignee %}
+                                <span class="d-flex align-items-center gap-1">
+                                    <div style="width:18px;height:18px;background:var(--color-success-soft);border-radius:50%;
+                                                display:flex;align-items:center;justify-content:center;
+                                                font-size:0.65rem;font-weight:700;color:var(--color-success)">
+                                        {{ ticket.assignee.username[0]|upper }}
+                                    </div>
+                                    {{ ticket.assignee.username }}
+                                </span>
+                                {% else %}
+                                <span style="color:var(--text-muted); font-style:italic">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                   class="btn btn-action-secondary btn-sm">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-{% else %}
-<div class="card">
-    <div class="card-body text-center p-5">
-        <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
-        <h3>No tickets found</h3>
-        <p class="text-muted">There are no tickets matching your criteria.</p>
-        <a href="{{ url_for('ticket_create') }}" class="btn btn-primary mt-2">
-            <i class="bi bi-plus-circle me-1"></i> Create New Ticket
-        </a>
+
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox" style="font-size:2.5rem; color:var(--text-muted)"></i>
+            <h5 class="mt-3 mb-1" style="color:var(--text-secondary)">Nessun ticket trovato</h5>
+            <p class="mb-4" style="font-size:0.875rem; color:var(--text-muted)">
+                Nessun ticket corrisponde ai criteri selezionati.
+            </p>
+            <a href="{{ url_for('ticket_create') }}" class="btn btn-action-primary">
+                <i class="bi bi-plus-lg me-1"></i>Crea Nuovo Ticket
+            </a>
+        </div>
     </div>
+    {% endif %}
+
 </div>
-{% endif %}
 {% endblock %}

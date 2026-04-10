@@ -4,8 +4,9 @@ from datetime import datetime
 from flask import current_app
 from flask_mail import Message
 from werkzeug.utils import secure_filename
-from app import mail
-from models import Ticket, User, TicketStatus
+#from app import mail
+from extensions import mail
+from models import Ticket, User, TicketStatus, UserRole
 
 
 def save_attachment(file):
@@ -88,10 +89,10 @@ def notify_ticket_created(ticket):
     """Send notification when a ticket is created"""
     # Notify IT team and managers if approvals needed
     if ticket.requires_approval():
-        managers = User.query.filter_by(role='MANAGER').all()
+        managers = User.query.filter_by(role=UserRole.MANAGER).all()
         recipients = [manager.email for manager in managers]
     else:
-        it_team = User.query.filter_by(role='IT').all()
+        it_team = User.query.filter_by(role=UserRole.IT).all()
         recipients = [it_member.email for it_member in it_team]
     
     subject = f"New Ticket Created: {ticket.title}"
@@ -110,20 +111,20 @@ def notify_ticket_created(ticket):
 
 
 def notify_ticket_status_change(ticket, previous_status):
-    """Send notification when a ticket's status changes"""
     recipients = [ticket.creator.email]
-    
     if ticket.assignee:
         recipients.append(ticket.assignee.email)
-    
+    # Notifica anche il Dirigente IT se il ticket è in attesa di approvazione IT
+    from models import User, TicketStatus
+    if ticket.status == TicketStatus.AWAITING_IT_MANAGER_APPROVAL:
+        it_managers = User.query.filter_by(role=UserRole.MANAGER).all()
+        recipients += [user.email for user in it_managers]
     subject = f"Ticket #{ticket.id} Status Updated: {ticket.status.value}"
     template = f"""
     <h2>Ticket #{ticket.id}: {ticket.title}</h2>
-    <p>Status changed from <strong>{previous_status.value}</strong> to <strong>{ticket.status.value}</strong></p>
-    <p><strong>Category:</strong> {ticket.category_rel.name}</p>
+    <p><strong>Status:</strong> {ticket.status.value}</p>
     <p><strong>Description:</strong><br>{ticket.description}</p>
     """
-    
     return send_notification_email(recipients, subject, template)
 
 
@@ -135,7 +136,7 @@ def notify_ticket_comment(ticket, comment):
         recipients.append(ticket.assignee.email)
     
     # Don't send internal comments to users
-    if comment.internal_only and ticket.creator.role == 'USER':
+    if comment.internal_only and ticket.creator.role == UserRole.USER:
         recipients.remove(ticket.creator.email)
     
     subject = f"New Comment on Ticket #{ticket.id}"

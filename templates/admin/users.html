@@ -1,182 +1,382 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Users - IT Support Tickets{% endblock %}
+{% block title %}Gestione Utenti — IT Support Admin{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>
-            <i class="bi bi-people me-2"></i>
-            Manage Users
-        </h1>
-    </div>
-    <div class="col-auto">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userModal">
-            <i class="bi bi-person-plus me-1"></i> Add New User
+<div class="animate-fade-in">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="bi bi-people me-2" style="color:var(--color-accent)"></i>Gestione Utenti
+            </h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Crea, modifica e gestisci gli account del sistema.
+            </p>
+        </div>
+        <!-- AZIONE PRIMARIA: Aggiungi utente -->
+        <button type="button" class="btn btn-action-primary" data-bs-toggle="modal" data-bs-target="#userModal"
+                id="admin-add-user">
+            <i class="bi bi-person-plus me-1"></i>Nuovo Utente
         </button>
     </div>
-</div>
 
-{% if users %}
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="bi bi-list-ul me-2"></i>
-            User List
-        </h5>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Department</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                    <tr>
-                        <td>{{ user.username }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>
-                            <span class="badge 
-                                {% if user.role.name == 'ADMIN' %}bg-danger
-                                {% elif user.role.name == 'MANAGER' %}bg-warning
-                                {% elif user.role.name == 'IT' %}bg-info
-                                {% else %}bg-secondary{% endif %}">
-                                {{ user.role.value }}
-                            </span>
-                        </td>
-                        <td>{{ user.department or "-" }}</td>
-                        <td>
-                            {% if user.is_active %}
-                            <span class="badge bg-success">Active</span>
-                            {% else %}
-                            <span class="badge bg-danger">Inactive</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-primary" 
-                                    onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.email }}', 
-                                              '{{ user.role.name }}', '{{ user.department or '' }}', {{ 'true' if user.is_active else 'false' }})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    {% if users %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-semibold" style="font-size:0.85rem">
+                <i class="bi bi-list-ul me-2" style="color:var(--text-muted)"></i>Lista Utenti
+            </h6>
+            <span style="font-size:0.78rem; font-weight:600; background:var(--surface-elevated); padding:.2rem .6rem;
+                         border-radius:var(--radius-pill); color:var(--text-secondary); border:1px solid var(--surface-border)">
+                {{ users|length }} utenti
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Utente</th>
+                            <th>Email</th>
+                            <th>Ruolo</th>
+                            <th>Dipartimento</th>
+                            <th>Gestisce</th>
+                            <th>Stato</th>
+                            <th>Creato</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:28px;height:28px;border-radius:50%;
+                                                background:var(--color-accent-soft);
+                                                display:flex;align-items:center;justify-content:center;
+                                                font-size:0.72rem;font-weight:700;color:var(--color-accent);
+                                                flex-shrink:0">
+                                        {{ user.username[0]|upper }}
+                                    </div>
+                                    <span style="font-weight:500; font-size:0.875rem">{{ user.username }}</span>
+                                </div>
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ user.email }}</td>
+                            <td>
+                                {% if user.role.name == 'ADMIN' %}
+                                <span class="role-badge role-admin"><i class="bi bi-shield-lock-fill"></i>{{ user.role.value }}</span>
+                                {% elif user.role.name == 'MANAGER' %}
+                                <span class="role-badge role-manager"><i class="bi bi-briefcase-fill"></i>{{ user.role.value }}</span>
+                                {% elif user.role.name == 'DEPT_MANAGER' %}
+                                <span class="role-badge role-dept-manager"><i class="bi bi-building"></i>{{ user.role.value }}</span>
+                                {% elif user.role.name == 'IT' %}
+                                <span class="role-badge role-it"><i class="bi bi-tools"></i>{{ user.role.value }}</span>
+                                {% else %}
+                                <span class="role-badge role-user"><i class="bi bi-person"></i>{{ user.role.value }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">
+                                {{ user.department_rel.name if user.department_rel else '—' }}
+                            </td>
+                            <td>
+                                {% if user.managed_department_rel %}
+                                <span style="font-size:0.78rem; background:var(--color-success-soft); color:var(--color-success);
+                                             padding:.1rem .45rem; border-radius:var(--radius-pill); font-weight:600">
+                                    {{ user.managed_department_rel.name }}
+                                </span>
+                                {% else %}
+                                <span style="color:var(--text-muted); font-size:0.82rem">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                <span style="font-size:0.75rem; font-weight:600; color:var(--color-success);
+                                             background:var(--color-success-soft); padding:.1rem .45rem;
+                                             border-radius:var(--radius-pill)">
+                                    <i class="bi bi-circle-fill me-1" style="font-size:.45rem; vertical-align:middle"></i>Attivo
+                                </span>
+                                {% else %}
+                                <span style="font-size:0.75rem; font-weight:600; color:var(--color-danger);
+                                             background:var(--color-danger-soft); padding:.1rem .45rem;
+                                             border-radius:var(--radius-pill)">
+                                    Inattivo
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <!-- SECONDARIA: Modifica -->
+                                    <button type="button" class="btn btn-action-secondary btn-sm"
+                                            data-user-id="{{ user.id }}"
+                                            data-username="{{ user.username }}"
+                                            data-email="{{ user.email }}"
+                                            data-role="{{ user.role.name }}"
+                                            data-dept-id="{{ user.department_rel.id if user.department_rel else '' }}"
+                                            data-managed-dept-id="{{ user.managed_department_rel.id if user.managed_department_rel else '' }}"
+                                            data-is-active="{{ 'true' if user.is_active else 'false' }}"
+                                            onclick="openEditUserModal(this)"
+                                            title="Modifica">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <!-- CAUTION: Reset Password -->
+                                    <button type="button" class="btn btn-action-caution btn-sm"
+                                            data-user-id="{{ user.id }}"
+                                            data-username="{{ user.username }}"
+                                            onclick="openResetPasswordModal(this)"
+                                            title="Reset Password">
+                                        <i class="bi bi-key"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-{% else %}
-<div class="card">
-    <div class="card-body text-center p-5">
-        <i class="bi bi-people fs-1 text-muted mb-3"></i>
-        <h3>No users found</h3>
-        <p class="text-muted">There are no users in the system yet.</p>
-        <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#userModal">
-            <i class="bi bi-person-plus me-1"></i> Add Your First User
-        </button>
-    </div>
-</div>
-{% endif %}
 
-<!-- User Modal -->
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-people" style="font-size:2.5rem; color:var(--text-muted)"></i>
+            <h5 class="mt-3 mb-1" style="color:var(--text-secondary)">Nessun utente trovato</h5>
+            <p class="mb-4" style="font-size:0.875rem; color:var(--text-muted)">Non ci sono ancora utenti nel sistema.</p>
+            <button type="button" class="btn btn-action-primary" data-bs-toggle="modal" data-bs-target="#userModal">
+                <i class="bi bi-person-plus me-1"></i>Aggiungi il Primo Utente
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ── Modal: Crea / Modifica Utente ── -->
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="userModalLabel">Add New User</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="userModalLabel">Nuovo Utente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
             <form method="POST" action="{{ url_for('user_create') }}" id="userForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     {{ form.hidden_tag() if form }}
-                    
+
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <input type="text" class="form-control" id="username" name="username" required
+                               placeholder="es. mario.rossi">
                     </div>
-                    
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                        <input type="email" class="form-control" id="email" name="email" required
+                               placeholder="es. mario@azienda.it">
                     </div>
-                    
                     <div class="mb-3">
-                        <label for="role" class="form-label">Role</label>
-                        <select class="form-select" id="role" name="role" required>
-                            <option value="USER">User</option>
-                            <option value="MANAGER">Manager</option>
+                        <label for="role" class="form-label">Ruolo</label>
+                        {% if current_user.is_admin() %}
+                        <select class="form-select" id="role" name="role" required onchange="toggleManagedDepartment()">
+                            <option value="USER">Utente</option>
+                            <option value="DEPT_MANAGER">Department Manager</option>
+                            <option value="MANAGER">IT Manager</option>
                             <option value="IT">IT Staff</option>
                             <option value="ADMIN">Administrator</option>
                         </select>
+                        {% else %}
+                        <input type="text" class="form-control" id="role" name="role"
+                               value="{{ form.role.data if form else '' }}" readonly>
+                        {% endif %}
                     </div>
-                    
                     <div class="mb-3">
-                        <label for="department" class="form-label">Department</label>
-                        <input type="text" class="form-control" id="department" name="department">
+                        <label for="department_id" class="form-label">Dipartimento</label>
+                        {% if current_user.is_admin() %}
+                        <select class="form-select" id="department_id" name="department_id"
+                                onchange="updateDepartmentManager()">
+                            <option value="">Nessuno</option>
+                            {% for id, name in form.department_id.choices if form %}
+                            <option value="{{ id }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <input type="text" class="form-control" id="department_id" name="department_id"
+                               value="{{ current_user.department.name if current_user.department else 'None' }}" readonly>
+                        {% endif %}
                     </div>
-                    
+
+                    <div class="mb-3" id="departmentManagerInfo" style="display:none">
+                        <label class="form-label">Manager del Dipartimento</label>
+                        <input type="text" class="form-control" id="departmentManager" readonly>
+                        <div class="form-text">L'utente sarà collegato al manager del dipartimento selezionato.</div>
+                    </div>
+
+                    <div class="mb-3" id="managedDepartmentDiv" style="display:none">
+                        <label for="managed_department_id" class="form-label">Dipartimento Gestito</label>
+                        {% if current_user.is_admin() %}
+                        <select class="form-select" id="managed_department_id" name="managed_department_id">
+                            <option value="">Nessuno</option>
+                            {% for id, name in form.managed_department_id.choices if form %}
+                            <option value="{{ id }}" {% if form.managed_department_id.data==id %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Dipartimento che questo utente gestirà come Dept. Manager.</div>
+                        {% endif %}
+                    </div>
+
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
-                        <label class="form-check-label" for="is_active">Active</label>
+                        <label class="form-check-label" for="is_active">Account Attivo</label>
                     </div>
-                    
-                    <div class="alert alert-info" id="passwordInfo">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <span>A default password (changeme123) will be set for new users.</span>
+
+                    <div class="alert alert-info" id="passwordInfo" style="font-size:0.83rem">
+                        <i class="bi bi-key me-2"></i>
+                        Password di default: <code>changeme123</code> — l'utente dovrà cambiarla al primo accesso.
                     </div>
-                    
+
                     <input type="hidden" id="userId" name="user_id" value="">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save User</button>
+                    <button type="button" class="btn btn-action-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-action-primary">Salva Utente</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- ── Modal: Reset Password ── -->
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="passwordModalLabel">
+                    <i class="bi bi-key me-2" style="color:var(--color-warning)"></i>Reset Password
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <form method="POST" action="" id="passwordForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p style="font-size:0.875rem; color:var(--text-secondary)">
+                        Stai modificando la password per: <strong id="passwordUsername"></strong>
+                    </p>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nuova Password</label>
+                        <input type="password" class="form-control" id="new_password" name="password"
+                               required minlength="8" placeholder="Minimo 8 caratteri">
+                    </div>
+                    <div class="mb-0">
+                        <label for="confirm_password" class="form-label">Conferma Password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                               required minlength="8" placeholder="Ripeti la password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-action-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <!-- CAUTION: azione moderatamente sensibile -->
+                    <button type="submit" class="btn btn-action-caution">
+                        <i class="bi bi-key me-2"></i>Aggiorna Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-    function editUser(id, username, email, role, department, isActive) {
-        // Update form action
+    const departmentManagers = {
+        {% for dept in departments %}
+        '{{ dept.id }}': '{{ dept.managed_by.username if dept.managed_by else "Nessun manager assegnato" }}',
+        {% endfor %}
+    };
+
+    function toggleManagedDepartment() {
+        const roleSelect = document.getElementById('role');
+        const managedDeptDiv = document.getElementById('managedDepartmentDiv');
+        managedDeptDiv.style.display = roleSelect.value === 'DEPT_MANAGER' ? 'block' : 'none';
+        if (roleSelect.value !== 'DEPT_MANAGER') {
+            document.getElementById('managed_department_id').value = '';
+        }
+        updateDepartmentManager();
+    }
+
+    function updateDepartmentManager() {
+        const deptSelect = document.getElementById('department_id');
+        const managerInfo = document.getElementById('departmentManagerInfo');
+        const managerField = document.getElementById('departmentManager');
+        const roleSelect = document.getElementById('role');
+        if (deptSelect.value && roleSelect.value !== 'DEPT_MANAGER') {
+            managerField.value = departmentManagers[deptSelect.value] || 'Nessun manager assegnato';
+            managerInfo.style.display = 'block';
+        } else {
+            managerInfo.style.display = 'none';
+        }
+    }
+
+    function openEditUserModal(button) {
+        const id = button.getAttribute('data-user-id');
+        editUser(
+            id,
+            button.getAttribute('data-username'),
+            button.getAttribute('data-email'),
+            button.getAttribute('data-role'),
+            button.getAttribute('data-dept-id'),
+            button.getAttribute('data-managed-dept-id'),
+            button.getAttribute('data-is-active')
+        );
+    }
+
+    function editUser(id, username, email, role, department, managedDepartment, isActive) {
         document.getElementById('userForm').action = '/admin/users/' + id + '/edit';
-        
-        // Fill form fields
-        document.getElementById('userModalLabel').textContent = 'Edit User';
+        document.getElementById('userModalLabel').textContent = 'Modifica Utente';
         document.getElementById('username').value = username;
         document.getElementById('email').value = email;
-        document.getElementById('role').value = role;
-        document.getElementById('department').value = department;
-        document.getElementById('is_active').checked = isActive;
+
+        const roleSelect = document.getElementById('role');
+        if (roleSelect.tagName === 'SELECT') {
+            Array.from(roleSelect.options).forEach(o => o.selected = o.value === role);
+        } else roleSelect.value = role;
+
+        const deptSelect = document.getElementById('department_id');
+        if (deptSelect.tagName === 'SELECT') {
+            Array.from(deptSelect.options).forEach(o => o.selected = o.value === department);
+        } else deptSelect.value = department;
+
+        const managedDeptSelect = document.getElementById('managed_department_id');
+        if (managedDeptSelect) {
+            Array.from(managedDeptSelect.options).forEach(o => o.selected = o.value === managedDepartment);
+        }
+
+        document.getElementById('is_active').checked = isActive === 'true';
         document.getElementById('userId').value = id;
-        
-        // Hide password info for edit
+        toggleManagedDepartment();
         document.getElementById('passwordInfo').style.display = 'none';
-        
-        // Show modal
         new bootstrap.Modal(document.getElementById('userModal')).show();
     }
-    
-    // Reset form when modal is hidden
+
     document.getElementById('userModal').addEventListener('hidden.bs.modal', function () {
         document.getElementById('userForm').reset();
         document.getElementById('userForm').action = "{{ url_for('user_create') }}";
-        document.getElementById('userModalLabel').textContent = 'Add New User';
+        document.getElementById('userModalLabel').textContent = 'Nuovo Utente';
         document.getElementById('userId').value = '';
         document.getElementById('passwordInfo').style.display = 'block';
+        document.getElementById('managedDepartmentDiv').style.display = 'none';
     });
+
+    function openResetPasswordModal(button) {
+        const userId = button.getAttribute('data-user-id');
+        const username = button.getAttribute('data-username');
+        document.getElementById('passwordForm').action = '/admin/users/' + userId + '/reset_password';
+        document.getElementById('passwordUsername').textContent = username;
+        document.getElementById('new_password').value = '';
+        document.getElementById('confirm_password').value = '';
+        new bootstrap.Modal(document.getElementById('passwordModal')).show();
+    }
 </script>
 {% endblock %}

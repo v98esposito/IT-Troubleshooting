@@ -19,10 +19,6 @@ class RegistrationForm(FlaskForm):
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     department_id = SelectField('Dipartimento', coerce=int, validators=[Optional()], render_kw={"class": "form-select"})
     submit = SubmitField('Register')
-    
-    def __init__(self, *args, **kwargs):
-        super(RegistrationForm, self).__init__(*args, **kwargs)
-        self.department_id.choices = [(d.id, d.name) for d in Department.query.order_by(Department.name).all()]
 
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
@@ -33,6 +29,11 @@ class RegistrationForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user:
             raise ValidationError('Email is already registered. Please use a different one.')
+            
+    def __init__(self, *args, **kwargs):
+        super(RegistrationForm, self).__init__(*args, **kwargs)
+        self.department_id.choices = [(d.id, d.name) for d in Department.query.order_by(Department.name).all()]
+        self.department_id.choices.insert(0, (0, 'Seleziona un dipartimento'))
 
 
 class TicketForm(FlaskForm):
@@ -96,63 +97,6 @@ class CategoryForm(FlaskForm):
         self.original_name = None
 
 
-class UserManagementForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=64)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    role = SelectField('Role', choices=[(role.name, role.value) for role in UserRole],
-                      validators=[DataRequired()], render_kw={"class": "form-select"})
-    department_id = SelectField('Dipartimento', coerce=int, validators=[Optional()], render_kw={"class": "form-select"})
-    managed_department_id = SelectField('Dipartimento Gestito (solo per Manager di Dipartimento)', 
-                                       coerce=int, validators=[Optional()], render_kw={"class": "form-select"})
-    is_active = BooleanField('Active')
-    submit = SubmitField('Save User')
-    
-    def __init__(self, *args, **kwargs):
-        super(UserManagementForm, self).__init__(*args, **kwargs)
-        departments = [(d.id, d.name) for d in Department.query.order_by(Department.name).all()]
-        self.department_id.choices = departments
-        self.managed_department_id.choices = [(0, 'Nessuno')] + departments
-
-    def validate_username(self, username):
-        if hasattr(self, 'original_username') and self.original_username and self.original_username != username.data:
-            user = User.query.filter_by(username=username.data).first()
-            if user:
-                raise ValidationError('Username is already taken.')
-        elif not hasattr(self, 'original_username'):
-            user = User.query.filter_by(username=username.data).first()
-            if user:
-                raise ValidationError('Username is already taken.')
-
-
-    def validate_email(self, email):
-        if hasattr(self, 'original_email') and self.original_email and self.original_email != email.data:
-            user = User.query.filter_by(email=email.data).first()
-            if user:
-                raise ValidationError('Email is already registered.')
-        elif not hasattr(self, 'original_email'):
-            user = User.query.filter_by(email=email.data).first()
-            if user:
-                raise ValidationError('Email is already registered.')
-
-
-class FilterTicketsForm(FlaskForm):
-    status = SelectField('Status', choices=[('all', 'All')], validators=[Optional()], render_kw={"class": "form-select"})
-    category = SelectField('Category', choices=[('all', 'All')], validators=[Optional()], render_kw={"class": "form-select"})
-    submit = SubmitField('Filter')
-
-    def __init__(self, *args, **kwargs):
-        super(FilterTicketsForm, self).__init__(*args, **kwargs)
-        # Add all statuses to choices
-        status_choices = [('all', 'All')]
-        status_choices.extend([(status.name, status.value) for status in TicketStatus])
-        self.status.choices = status_choices
-        
-        # Add all categories to choices
-        category_choices = [('all', 'All')]
-        category_choices.extend([(str(c.id), c.name) for c in Category.query.order_by(Category.name).all()])
-        self.category.choices = category_choices
-
-
 class DepartmentForm(FlaskForm):
     name = StringField('Nome Dipartimento', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Descrizione')
@@ -173,14 +117,31 @@ class DepartmentForm(FlaskForm):
         self.original_name = None
 
 
-class AdminPasswordResetForm(FlaskForm):
-    password = PasswordField('New Password', validators=[DataRequired(), Length(min=8)])
-    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
-    submit = SubmitField('Reset Password')
+class UserManagementForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=64)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    role = SelectField('Role', choices=[(role.name, role.value) for role in UserRole],
+                      validators=[DataRequired()], render_kw={"class": "form-select"})
+    department_id = SelectField('Dipartimento', coerce=int, validators=[Optional()], render_kw={"class": "form-select"})
+    is_active = BooleanField('Active')
+    submit = SubmitField('Save User')
+
+    def __init__(self, *args, **kwargs):
+        super(UserManagementForm, self).__init__(*args, **kwargs)
+        self.department_id.choices = [(d.id, d.name) for d in Department.query.order_by(Department.name).all()]
+        self.department_id.choices.insert(0, (0, 'Nessun dipartimento'))
 
 
-class ChangePasswordForm(FlaskForm):
-    old_password = PasswordField('Vecchia Password', validators=[DataRequired(), Length(min=8)])
-    new_password = PasswordField('Nuova Password', validators=[DataRequired(), Length(min=8)])
-    confirm_new_password = PasswordField('Conferma Nuova Password', validators=[DataRequired(), EqualTo('new_password')])
-    submit = SubmitField('Cambia Password')
+class FilterTicketsForm(FlaskForm):
+    status = SelectField('Status', choices=[(status.name, status.value) for status in TicketStatus])
+    category = SelectField('Category')
+    department = SelectField('Dipartimento')
+    submit = SubmitField('Filter')
+
+    def __init__(self, *args, **kwargs):
+        super(FilterTicketsForm, self).__init__(*args, **kwargs)
+        self.status.choices.insert(0, ('all', 'All Statuses'))
+        self.category.choices = [(str(c.id), c.name) for c in Category.query.order_by(Category.name).all()]
+        self.category.choices.insert(0, ('all', 'All Categories'))
+        self.department.choices = [(str(d.id), d.name) for d in Department.query.order_by(Department.name).all()]
+        self.department.choices.insert(0, ('all', 'All Departments'))

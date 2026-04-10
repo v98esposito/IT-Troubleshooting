@@ -1,385 +1,474 @@
 {% extends "base.html" %}
 
-{% block title %}IT Dashboard - IT Support Tickets{% endblock %}
+{% block title %}IT Dashboard — IT Support{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>
-            <i class="bi bi-speedometer me-2"></i>
-            IT Dashboard
-        </h1>
-    </div>
-</div>
+<div class="animate-fade-in">
 
-<!-- Stato di avanzamento dei ticket -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Stato di avanzamento dei ticket</h5>
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="bi bi-speedometer me-2" style="color:var(--color-accent)"></i>IT Performance Dashboard
+            </h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Panoramica del carico di lavoro e dello stato dei ticket assegnati.
+            </p>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card stat-info h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-info"><i class="bi bi-collection"></i></div>
+                    <div>
+                        <div class="stat-label">Ticket Totali</div>
+                        <div class="stat-value" style="color:var(--color-info)">{{ total_assigned }}</div>
+                        <div class="stat-sub">Tutti gli stati</div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="progress" style="height: 30px;">
-                    <!-- Ticket In corso (Assigned + In Progress + Waiting User) -->
-                    {% set in_progress_percent = (tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length) / total_assigned * 100 if total_assigned > 0 else 0 %}
-                    
-                    <!-- Ticket Completati (Resolved + Closed) -->
-                    {% set completed_percent = (tickets_by_status.resolved|length + tickets_by_status.closed|length) / total_assigned * 100 if total_assigned > 0 else 0 %}
-                    
-                    <!-- Ticket Rifiutati -->
-                    {% set rejected_count = tickets_by_status.rejected|default([])|length %}
-                    {% set rejected_percent = rejected_count / total_assigned * 100 if total_assigned > 0 else 0 %}
-                    
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ in_progress_percent }}%;" 
-                        aria-valuenow="{{ in_progress_percent }}" aria-valuemin="0" aria-valuemax="100">
-                        In corso ({{ (tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length) }})
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card stat-warning h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-warning"><i class="bi bi-gear-fill"></i></div>
+                    <div>
+                        <div class="stat-label">In Corso</div>
+                        <div class="stat-value" style="color:var(--color-warning)">
+                            {{ tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length }}
+                        </div>
+                        <div class="stat-sub">Assegnati + In Progress + Sospesi</div>
                     </div>
-                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ completed_percent }}%;" 
-                        aria-valuenow="{{ completed_percent }}" aria-valuemin="0" aria-valuemax="100">
-                        Completati ({{ (tickets_by_status.resolved|length + tickets_by_status.closed|length) }})
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card stat-success h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-success"><i class="bi bi-check-circle-fill"></i></div>
+                    <div>
+                        <div class="stat-label">Completati</div>
+                        <div class="stat-value" style="color:var(--color-success)">
+                            {{ tickets_by_status.resolved|length + tickets_by_status.closed|length }}
+                        </div>
+                        <div class="stat-sub">Risolti + Chiusi</div>
                     </div>
-                    <div class="progress-bar bg-danger" role="progressbar" style="width: {{ rejected_percent }}%;" 
-                        aria-valuenow="{{ rejected_percent }}" aria-valuemin="0" aria-valuemax="100">
-                        Rifiutati ({{ rejected_count }})
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card stat-danger h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-danger"><i class="bi bi-x-circle-fill"></i></div>
+                    <div>
+                        <div class="stat-label">Rifiutati</div>
+                        <div class="stat-value" style="color:var(--color-danger)">{{ tickets_by_status.rejected|default([])|length }}</div>
+                        <div class="stat-sub">Non approvati / chiusi</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3 mb-3">
-        <div class="card bg-dark text-white h-100">
-            <div class="card-body text-center">
-                <h1 class="display-4">{{ total_assigned }}</h1>
-                <p class="card-text">Ticket totali</p>
+    <!-- Progress bar avanzamento -->
+    {% if total_assigned > 0 %}
+    {% set in_progress_pct = (tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length) / total_assigned * 100 %}
+    {% set completed_pct   = (tickets_by_status.resolved|length + tickets_by_status.closed|length) / total_assigned * 100 %}
+    {% set rejected_pct    = tickets_by_status.rejected|default([])|length / total_assigned * 100 %}
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+            <i class="bi bi-bar-chart-line" style="color:var(--text-muted); font-size:.85rem"></i>
+            <h6 class="mb-0" style="font-size:0.85rem; font-weight:600; color:var(--text-secondary)">Avanzamento complessivo</h6>
+        </div>
+        <div class="card-body">
+            <div class="progress mb-2" style="height:12px; border-radius:var(--radius-pill)">
+                <div class="progress-bar" role="progressbar"
+                     style="width:{{ in_progress_pct }}%; background:var(--color-warning); border-radius:var(--radius-pill) 0 0 var(--radius-pill)"
+                     title="In corso">
+                </div>
+                <div class="progress-bar" role="progressbar"
+                     style="width:{{ completed_pct }}%; background:var(--color-success)"
+                     title="Completati">
+                </div>
+                <div class="progress-bar" role="progressbar"
+                     style="width:{{ rejected_pct }}%; background:var(--color-danger); border-radius:0 var(--radius-pill) var(--radius-pill) 0"
+                     title="Rifiutati">
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-3" style="font-size:0.78rem; color:var(--text-muted)">
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--color-warning);margin-right:4px"></span>In corso ({{ (tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length) }})</span>
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--color-success);margin-right:4px"></span>Completati ({{ tickets_by_status.resolved|length + tickets_by_status.closed|length }})</span>
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--color-danger);margin-right:4px"></span>Rifiutati ({{ tickets_by_status.rejected|default([])|length }})</span>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
-        <div class="card bg-warning text-dark h-100">
-            <div class="card-body text-center">
-                <h1 class="display-4">{{ tickets_by_status.assigned|length + tickets_by_status.in_progress|length + tickets_by_status.waiting_user|length }}</h1>
-                <p class="card-text">In corso</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card bg-success text-white h-100">
-            <div class="card-body text-center">
-                <h1 class="display-4">{{ tickets_by_status.resolved|length + tickets_by_status.closed|length }}</h1>
-                <p class="card-text">Completati</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card bg-danger text-white h-100">
-            <div class="card-body text-center">
-                <h1 class="display-4">{{ tickets_by_status.rejected|default([])|length }}</h1>
-                <p class="card-text">Rifiutati</p>
-            </div>
-        </div>
-    </div>
-</div>
+    {% endif %}
 
-<!-- Tickets By Status -->
-<div class="row">
-    <!-- Assigned Tickets -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-clipboard-check me-2"></i>
-                    Assigned Tickets
-                </h5>
-                <span class="badge bg-primary">{{ tickets_by_status.assigned|length }}</span>
-            </div>
-            <div class="card-body">
-                {% if tickets_by_status.assigned %}
-                <div class="list-group">
-                    {% for ticket in tickets_by_status.assigned %}
-                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">#{{ ticket.id }} - {{ ticket.title }}</h6>
-                            <span class="badge bg-primary">{{ ticket.status.value }}</span>
+    <!-- Kanban-style: Assegnati + In Progress -->
+    <div class="row g-4 mb-4">
+
+        <!-- Assigned -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-clipboard-check" style="color:var(--color-accent)"></i>
+                        <h6 class="mb-0 fw-semibold" style="font-size:0.9rem">Assegnati</h6>
+                    </div>
+                    <span class="status-badge status-assigned">{{ tickets_by_status.assigned|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if tickets_by_status.assigned %}
+                    <div class="list-group list-group-flush">
+                        {% for ticket in tickets_by_status.assigned %}
+                        <div class="list-group-item px-4 py-3">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div>
+                                    <span style="font-size:0.72rem; font-weight:700; color:var(--text-muted)">#{{ ticket.id }}</span>
+                                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                       class="d-block fw-semibold" style="font-size:0.875rem; color:var(--text-primary); text-decoration:none">
+                                        {{ ticket.title }}
+                                    </a>
+                                </div>
+                            </div>
+                            <p class="mb-2 text-truncate" style="font-size:0.8rem; color:var(--text-muted)">{{ ticket.description }}</p>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span style="font-size:0.75rem; color:var(--text-muted)">
+                                    <i class="bi bi-person me-1"></i>{{ ticket.creator.username }}
+                                </span>
+                                <div class="ms-auto d-flex flex-wrap gap-1">
+                                    <!-- AZIONI: Start Working (Primaria) -->
+                                    <button type="button" class="btn btn-action-primary btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#startModal{{ ticket.id }}">
+                                        <i class="bi bi-play-fill me-1"></i>Inizia
+                                    </button>
+                                    <!-- Completa (Costruttiva) -->
+                                    <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="RESOLVED">
+                                        <button type="submit" class="btn btn-action-constructive btn-sm">
+                                            <i class="bi bi-check-circle me-1"></i>Risolto
+                                        </button>
+                                    </form>
+                                    <!-- Sospendi (Caution) -->
+                                    <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="WAITING_USER">
+                                        <button type="submit" class="btn btn-action-caution btn-sm">
+                                            <i class="bi bi-hourglass-split"></i>
+                                        </button>
+                                    </form>
+                                    <!-- Rifiuta (Destructive) -->
+                                    <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="REJECTED">
+                                        <button type="submit" class="btn btn-action-destructive btn-sm"
+                                                onclick="return confirm('Rifiutare il ticket?')">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
-                        <p class="mb-1 text-truncate">{{ ticket.description }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small>From: {{ ticket.creator.username }}</small>
-                            <div>
+                        <!-- Modal Inizia Lavorazione -->
+                        <div class="modal fade" id="startModal{{ ticket.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Inizia — #{{ ticket.id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="IN_PROGRESS">
+                                        <div class="modal-body">
+                                            <p style="font-weight:600; font-size:.875rem">{{ ticket.title }}</p>
+                                            <div>
+                                                <label for="notes{{ ticket.id }}" class="form-label">Note (opzionale)</label>
+                                                <textarea class="form-control" id="notes{{ ticket.id }}" name="notes" rows="3"
+                                                          placeholder="Note sulla presa in carico..."></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-action-secondary" data-bs-dismiss="modal">Annulla</button>
+                                            <button type="submit" class="btn btn-action-constructive">
+                                                <i class="bi bi-play-fill me-2"></i>Conferma
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clipboard-check" style="font-size:2rem; color:var(--text-muted)"></i>
+                        <p class="mt-2 mb-0" style="font-size:0.85rem; color:var(--text-muted)">Nessun ticket assegnato in attesa.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- In Progress -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-gear-fill" style="color:var(--color-success)"></i>
+                        <h6 class="mb-0 fw-semibold" style="font-size:0.9rem">In Lavorazione</h6>
+                    </div>
+                    <span class="status-badge status-in-progress">{{ tickets_by_status.in_progress|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if tickets_by_status.in_progress %}
+                    <div class="list-group list-group-flush">
+                        {% for ticket in tickets_by_status.in_progress %}
+                        <div class="list-group-item px-4 py-3">
+                            <div class="mb-1">
+                                <span style="font-size:0.72rem; font-weight:700; color:var(--text-muted)">#{{ ticket.id }}</span>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                   class="d-block fw-semibold" style="font-size:0.875rem; color:var(--text-primary); text-decoration:none">
+                                    {{ ticket.title }}
+                                </a>
+                            </div>
+                            <p class="mb-2 text-truncate" style="font-size:0.8rem; color:var(--text-muted)">{{ ticket.description }}</p>
+                            <div class="d-flex flex-wrap gap-1 align-items-center">
+                                <span style="font-size:0.75rem; color:var(--text-muted)">
+                                    <i class="bi bi-person me-1"></i>{{ ticket.creator.username }}
+                                </span>
+                                <div class="ms-auto d-flex flex-wrap gap-1">
+                                    <!-- Completa (Primaria costruttiva) -->
+                                    <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="RESOLVED">
+                                        <button type="submit" class="btn btn-action-constructive btn-sm">
+                                            <i class="bi bi-check-circle me-1"></i>Risolto
+                                        </button>
+                                    </form>
+                                    <!-- Sospendi (Caution) -->
+                                    <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="WAITING_USER">
+                                        <button type="submit" class="btn btn-action-caution btn-sm">
+                                            <i class="bi bi-hourglass-split"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-gear" style="font-size:2rem; color:var(--text-muted)"></i>
+                        <p class="mt-2 mb-0" style="font-size:0.85rem; color:var(--text-muted)">Nessun ticket in lavorazione.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waiting for User + Recently Resolved -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-hourglass-split" style="color:var(--color-warning)"></i>
+                        <h6 class="mb-0 fw-semibold" style="font-size:0.9rem">In Attesa Utente</h6>
+                    </div>
+                    <span class="status-badge status-waiting-user">{{ tickets_by_status.waiting_user|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if tickets_by_status.waiting_user %}
+                    <div class="list-group list-group-flush">
+                        {% for ticket in tickets_by_status.waiting_user %}
+                        <div class="list-group-item px-4 py-3">
+                            <div class="mb-1">
+                                <span style="font-size:.72rem;font-weight:700;color:var(--text-muted)">#{{ ticket.id }}</span>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                   class="d-block fw-semibold" style="font-size:0.875rem;color:var(--text-primary);text-decoration:none">
+                                    {{ ticket.title }}
+                                </a>
+                            </div>
+                            <div class="d-flex gap-1 mt-2 justify-content-end">
                                 <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="status" value="IN_PROGRESS">
-                                    <button type="submit" class="btn btn-sm btn-success">
-                                        <i class="bi bi-play-fill me-1"></i> Start Working
+                                    <button type="submit" class="btn btn-action-primary btn-sm">
+                                        <i class="bi bi-play-fill me-1"></i>Riprendi
                                     </button>
                                 </form>
                             </div>
                         </div>
-                    </a>
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-hourglass" style="font-size:2rem; color:var(--text-muted)"></i>
+                        <p class="mt-2 mb-0" style="font-size:0.85rem; color:var(--text-muted)">Nessun ticket in attesa risposta.</p>
+                    </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center p-4">
-                    <i class="bi bi-clipboard-check text-muted fs-1"></i>
-                    <p class="mt-3">No assigned tickets waiting to be worked on.</p>
-                </div>
-                {% endif %}
             </div>
         </div>
-    </div>
 
-    <!-- In Progress Tickets -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-gear-fill me-2"></i>
-                    In Progress
-                </h5>
-                <span class="badge bg-success">{{ tickets_by_status.in_progress|length }}</span>
-            </div>
-            <div class="card-body">
-                {% if tickets_by_status.in_progress %}
-                <div class="list-group">
-                    {% for ticket in tickets_by_status.in_progress %}
-                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">#{{ ticket.id }} - {{ ticket.title }}</h6>
-                            <span class="badge bg-success">{{ ticket.status.value }}</span>
-                        </div>
-                        <p class="mb-1 text-truncate">{{ ticket.description }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small>From: {{ ticket.creator.username }}</small>
-                            <div class="btn-group">
-                                <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline me-1">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="status" value="WAITING_USER">
-                                    <button type="submit" class="btn btn-sm btn-warning">
-                                        <i class="bi bi-hourglass-split me-1"></i> Wait for User
-                                    </button>
-                                </form>
-                                <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="status" value="RESOLVED">
-                                    <button type="submit" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-check-circle me-1"></i> Resolve
-                                    </button>
-                                </form>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle" style="color:var(--color-success)"></i>
+                        <h6 class="mb-0 fw-semibold" style="font-size:0.9rem">Risolti di Recente</h6>
+                    </div>
+                    <span class="status-badge status-resolved">{{ tickets_by_status.resolved|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if tickets_by_status.resolved %}
+                    <div class="list-group list-group-flush">
+                        {% for ticket in tickets_by_status.resolved %}
+                        <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                           class="list-group-item list-group-item-action px-4 py-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span style="font-size:.72rem;font-weight:700;color:var(--text-muted)">#{{ ticket.id }}</span>
+                                    <div class="fw-semibold" style="font-size:0.875rem">{{ ticket.title }}</div>
+                                </div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap">
+                                    {{ ticket.updated_at.strftime('%d/%m/%Y') }}
+                                </span>
                             </div>
-                        </div>
-                    </a>
-                    {% endfor %}
+                            <div style="font-size:0.78rem; color:var(--text-muted); margin-top:.25rem">
+                                <i class="bi bi-person me-1"></i>{{ ticket.creator.username }}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-check2-all" style="font-size:2rem; color:var(--text-muted)"></i>
+                        <p class="mt-2 mb-0" style="font-size:0.85rem; color:var(--text-muted)">Nessun ticket risolto recentemente.</p>
+                    </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center p-4">
-                    <i class="bi bi-gear text-muted fs-1"></i>
-                    <p class="mt-3">No tickets currently in progress.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Waiting for User -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-hourglass-split me-2"></i>
-                    Waiting for User
-                </h5>
-                <span class="badge bg-warning">{{ tickets_by_status.waiting_user|length }}</span>
-            </div>
-            <div class="card-body">
-                {% if tickets_by_status.waiting_user %}
-                <div class="list-group">
-                    {% for ticket in tickets_by_status.waiting_user %}
-                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">#{{ ticket.id }} - {{ ticket.title }}</h6>
-                            <span class="badge bg-warning">{{ ticket.status.value }}</span>
-                        </div>
-                        <p class="mb-1 text-truncate">{{ ticket.description }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small>From: {{ ticket.creator.username }}</small>
-                            <form method="POST" action="{{ url_for('it_update_ticket_status', ticket_id=ticket.id) }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="status" value="IN_PROGRESS">
-                                <button type="submit" class="btn btn-sm btn-success">
-                                    <i class="bi bi-play-fill me-1"></i> Resume Work
-                                </button>
-                            </form>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center p-4">
-                    <i class="bi bi-hourglass text-muted fs-1"></i>
-                    <p class="mt-3">No tickets waiting for user response.</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Recently Resolved -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-check-circle me-2"></i>
-                    Recently Resolved
-                </h5>
-                <span class="badge bg-info">{{ tickets_by_status.resolved|length }}</span>
+    <!-- Available Tickets (da prendere in carico) -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-inbox" style="color:var(--color-accent)"></i>
+                <h6 class="mb-0 fw-semibold" style="font-size:0.9rem">Ticket Disponibili</h6>
             </div>
-            <div class="card-body">
-                {% if tickets_by_status.resolved %}
-                <div class="list-group">
-                    {% for ticket in tickets_by_status.resolved %}
-                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">#{{ ticket.id }} - {{ ticket.title }}</h6>
-                            <span class="badge bg-info">{{ ticket.status.value }}</span>
-                        </div>
-                        <p class="mb-1 text-truncate">{{ ticket.description }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small>From: {{ ticket.creator.username }}</small>
-                            <small>Resolved: {{ ticket.updated_at.strftime('%Y-%m-%d') }}</small>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center p-4">
-                    <i class="bi bi-check2-all text-muted fs-1"></i>
-                    <p class="mt-3">No recently resolved tickets.</p>
-                </div>
-                {% endif %}
+            <span style="font-size:0.78rem; font-weight:600; background:var(--surface-elevated); padding:.2rem .6rem;
+                         border-radius:var(--radius-pill); color:var(--text-secondary); border:1px solid var(--surface-border)">
+                {{ available_tickets|length }} disponibili
+            </span>
+        </div>
+        <div class="card-body p-0">
+            {% if available_tickets %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titolo</th>
+                            <th>Richiedente</th>
+                            <th>Categoria</th>
+                            <th>Creato</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in available_tickets %}
+                        <tr>
+                            <td><span style="font-size:0.78rem;font-weight:700;color:var(--text-muted)">#{{ ticket.id }}</span></td>
+                            <td>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                   style="font-weight:500; font-size:0.875rem; color:var(--text-primary); text-decoration:none">
+                                    {{ ticket.title }}
+                                </a>
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ ticket.creator.username }}</td>
+                            <td>
+                                <span style="font-size:0.78rem; background:var(--surface-elevated); padding:.1rem .45rem;
+                                             border-radius:var(--radius-pill); border:1px solid var(--surface-border); color:var(--text-secondary)">
+                                    {{ ticket.category_rel.name }}
+                                </span>
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ ticket.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="assignee_id" value="{{ current_user.id }}">
+                                    <button type="submit" class="btn btn-action-primary btn-sm">
+                                        <i class="bi bi-person-plus me-1"></i>Prendi in carico
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-inbox" style="font-size:2rem; color:var(--text-muted)"></i>
+                <p class="mt-2 mb-0" style="font-size:0.85rem; color:var(--text-muted)">Nessun ticket disponibile per assegnazione.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
-</div>
 
-<!-- Rejected Tickets -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-x-circle me-2"></i>
-                    Ticket Rifiutati
-                </h5>
-                <span class="badge bg-light text-danger">{{ tickets_by_status.rejected|length }}</span>
+    <!-- Rejected Tickets -->
+    {% if tickets_by_status.rejected %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center"
+             style="border-left:3px solid var(--color-danger)">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-x-circle" style="color:var(--color-danger)"></i>
+                <h6 class="mb-0 fw-semibold" style="font-size:0.9rem">Ticket Rifiutati</h6>
             </div>
-            <div class="card-body">
-                {% if tickets_by_status.rejected %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Titolo</th>
-                                <th>Utente</th>
-                                <th>Categoria</th>
-                                <th>Data Rifiuto</th>
-                                <th>Rifiutato Da</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ticket in tickets_by_status.rejected %}
-                            <tr>
-                                <td>#{{ ticket.id }}</td>
-                                <td>
-                                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
-                                        {{ ticket.title }}
-                                    </a>
-                                </td>
-                                <td>{{ ticket.creator.username }}</td>
-                                <td>{{ ticket.category_rel.name }}</td>
-                                <td>{{ ticket.updated_at.strftime('%Y-%m-%d') }}</td>
-                                <td>{{ ticket.approver.username if ticket.approver else 'N/A' }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center p-4">
-                    <i class="bi bi-x-circle text-muted fs-1"></i>
-                    <p class="mt-3">Nessun ticket rifiutato.</p>
-                </div>
-                {% endif %}
+            <span class="status-badge status-rejected">{{ tickets_by_status.rejected|length }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Titolo</th><th>Utente</th><th>Categoria</th><th>Data Rifiuto</th><th>Rifiutato Da</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets_by_status.rejected %}
+                        <tr>
+                            <td><span style="font-size:0.78rem;font-weight:700;color:var(--text-muted)">#{{ ticket.id }}</span></td>
+                            <td>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                   style="font-weight:500;font-size:0.875rem;color:var(--text-primary);text-decoration:none">
+                                    {{ ticket.title }}
+                                </a>
+                            </td>
+                            <td style="font-size:0.82rem;color:var(--text-secondary)">{{ ticket.creator.username }}</td>
+                            <td style="font-size:0.82rem;color:var(--text-secondary)">{{ ticket.category_rel.name }}</td>
+                            <td style="font-size:0.82rem;color:var(--text-secondary)">{{ ticket.updated_at.strftime('%d/%m/%Y') }}</td>
+                            <td style="font-size:0.82rem;color:var(--text-secondary)">{{ ticket.approver.username if ticket.approver else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-</div>
+    {% endif %}
 
-<!-- Available Tickets to Assign -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-inbox me-2"></i>
-                    Available Tickets
-                </h5>
-                <span class="badge bg-secondary">{{ available_tickets|length }}</span>
-            </div>
-            <div class="card-body">
-                {% if available_tickets %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Title</th>
-                                <th>Requester</th>
-                                <th>Category</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ticket in available_tickets %}
-                            <tr>
-                                <td>#{{ ticket.id }}</td>
-                                <td>
-                                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
-                                        {{ ticket.title }}
-                                    </a>
-                                </td>
-                                <td>{{ ticket.creator.username }}</td>
-                                <td>{{ ticket.category_rel.name }}</td>
-                                <td>{{ ticket.created_at.strftime('%Y-%m-%d') }}</td>
-                                <td>
-                                    <form method="POST" action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}" class="d-inline">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="assignee_id" value="{{ current_user.id }}">
-                                        <button type="submit" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-person-plus me-1"></i> Assign to Me
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center p-4">
-                    <i class="bi bi-inbox text-muted fs-1"></i>
-                    <p class="mt-3">No tickets available for assignment.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}

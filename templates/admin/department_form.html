@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} — IT Support Admin{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('department_list') }}">Dipartimenti</a></li>
+                    <li class="breadcrumb-item active">{{ "Nuovo" if "Nuovo" in title else "Modifica" }} Dipartimento</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:32px;height:32px;background:var(--color-info-soft);border-radius:var(--radius-md);
+                                    display:flex;align-items:center;justify-content:center">
+                            <i class="bi bi-building" style="color:var(--color-info)"></i>
+                        </div>
+                        <h5 class="mb-0 fw-bold" style="font-size:1rem">{{ title }}</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {% if form.name.errors %}
+                            {{ form.name(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            {{ form.name(class="form-control", placeholder="Es. Risorse Umane") }}
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.description.label(class="form-label") }}
+                            {% if form.description.errors %}
+                            {{ form.description(class="form-control is-invalid", rows=3) }}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            {{ form.description(class="form-control", rows=3, placeholder="Breve descrizione del dipartimento...") }}
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-2" style="border-top:1px solid var(--surface-border)">
+                            <a href="{{ url_for('department_list') }}" class="btn btn-action-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Annulla
+                            </a>
+                            {{ form.submit(class="btn btn-action-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

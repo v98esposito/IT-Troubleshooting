@@ -2,23 +2,42 @@ from datetime import datetime
 import enum
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import db, login_manager
+from extensions import db, login_manager
+#from app import db, login_manager
 
 
 class UserRole(enum.Enum):
     USER = "User"
+    DEPT_MANAGER = "Department Manager"
     MANAGER = "Manager"
     IT = "IT"
     ADMIN = "Admin"
 
 
+class Department(db.Model):
+    __tablename__ = 'department'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    users = db.relationship('User', backref='department_rel', foreign_keys='User.department_id', lazy='dynamic')
+    managed_by = db.relationship('User', backref='managed_department_rel', foreign_keys='User.managed_department_id', uselist=False)
+    
+    def __repr__(self):
+        return f'<Department {self.name}>'
+
+
 class User(UserMixin, db.Model):
+    __tablename__ = 'user'
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.Enum(UserRole), default=UserRole.USER, nullable=False)
-    department = db.Column(db.String(120))
+    department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
+    managed_department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
 
@@ -40,11 +59,30 @@ class User(UserMixin, db.Model):
     def is_it(self):
         return self.role == UserRole.IT or self.role == UserRole.ADMIN
 
+    def is_dept_manager(self):
+        return self.role == UserRole.DEPT_MANAGER or self.role == UserRole.ADMIN
+    
     def is_manager(self):
         return self.role == UserRole.MANAGER or self.role == UserRole.ADMIN
+    
+    def is_any_manager(self):
+        return self.role in [UserRole.DEPT_MANAGER, UserRole.MANAGER, UserRole.ADMIN]
 
     def __repr__(self):
         return f'<User {self.username}>'
+
+
+class PasswordReset(db.Model):
+    __tablename__ = 'password_reset'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
+    must_change = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('password_reset_rel', uselist=False))
+
+    def __repr__(self):
+        return f'<PasswordReset user_id={self.user_id} must_change={self.must_change}>'
 
 
 # User loader for Flask-Login
@@ -55,12 +93,16 @@ def load_user(user_id):
 
 class TicketStatus(enum.Enum):
     NEW = "New"
-    AWAITING_APPROVAL = "Awaiting Approval"
+    AWAITING_DEPT_MANAGER_APPROVAL = "Awaiting Department Manager Approval"
+    REJECTED_BY_DEPT_MANAGER = "Rejected by Department Manager"
+    AWAITING_IT_MANAGER_APPROVAL = "Awaiting IT Manager Approval"
+    AWAITING_APPROVAL = "Awaiting Approval"  # Mantenuto per compatibilità
     APPROVED = "Approved"
     REJECTED = "Rejected"
     ASSIGNED = "Assigned"
     IN_PROGRESS = "In Progress"
     WAITING_USER = "Waiting for User"
+    PENDING = "In Sospeso"
     RESOLVED = "Resolved"
     CLOSED = "Closed"
 
@@ -89,6 +131,8 @@ class Ticket(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     assignee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     approver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    dept_manager_approver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=True)
     
     # Relationships
     comments = db.relationship('Comment', backref='ticket', cascade='all, delete-orphan', lazy='dynamic')
@@ -97,8 +141,18 @@ class Ticket(db.Model):
     def requires_approval(self):
         return self.category_rel.requires_approval
 
+    def can_be_approved_by_dept_manager(self, user):
+        return (user.is_dept_manager() and 
+                self.status == TicketStatus.AWAITING_DEPT_MANAGER_APPROVAL and
+                user.managed_department_id == self.department_id)
+    
+    def can_be_approved_by_it_manager(self, user):
+        return user.is_manager() and self.status == TicketStatus.AWAITING_IT_MANAGER_APPROVAL
+    
     def can_be_approved_by(self, user):
-        return user.is_manager() and self.status == TicketStatus.AWAITING_APPROVAL
+        return (self.can_be_approved_by_dept_manager(user) or 
+                self.can_be_approved_by_it_manager(user) or
+                (user.is_manager() and self.status == TicketStatus.AWAITING_APPROVAL))
 
     def can_be_assigned_by(self, user):
         return (user.is_manager() or user.is_it()) and self.status == TicketStatus.APPROVED
@@ -107,7 +161,8 @@ class Ticket(db.Model):
         return (user.id == self.creator_id or 
                 user.id == self.assignee_id or 
                 user.is_admin() or 
-                (user.is_it() and self.status in [TicketStatus.ASSIGNED, TicketStatus.IN_PROGRESS, TicketStatus.WAITING_USER]))
+                (user.is_it() and self.status in [TicketStatus.ASSIGNED, TicketStatus.IN_PROGRESS, TicketStatus.WAITING_USER, TicketStatus.PENDING]) or
+                (user.is_manager() and self.status in [TicketStatus.APPROVED, TicketStatus.ASSIGNED, TicketStatus.IN_PROGRESS, TicketStatus.WAITING_USER, TicketStatus.PENDING, TicketStatus.RESOLVED]))
 
     def __repr__(self):
         return f'<Ticket {self.id}: {self.title}>'

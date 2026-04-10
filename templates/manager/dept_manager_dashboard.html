@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Manager Dipartimento — IT Support{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="bi bi-building me-2" style="color:var(--color-info)"></i>Dashboard Manager di Dipartimento
+            </h1>
+            <p class="mb-0" style="font-size:0.875rem; color:var(--text-secondary)">
+                Gestisci le richieste in attesa di approvazione dal tuo dipartimento.
+            </p>
+        </div>
+        {% if pending_tickets %}
+        <span class="status-badge status-awaiting" style="font-size:0.82rem; padding:.3rem .8rem">
+            {{ pending_tickets|length }} da approvare
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="card stat-card stat-warning h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-warning"><i class="bi bi-clock-fill"></i></div>
+                    <div>
+                        <div class="stat-label">In Attesa Approvazione</div>
+                        <div class="stat-value" style="color:var(--color-warning)">{{ dept_stats.pending_approval }}</div>
+                        <div class="stat-sub">Richieste da esaminare</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card stat-card stat-success h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-success"><i class="bi bi-check-circle-fill"></i></div>
+                    <div>
+                        <div class="stat-label">Approvati (mese)</div>
+                        <div class="stat-value" style="color:var(--color-success)">{{ dept_stats.approved_this_month }}</div>
+                        <div class="stat-sub">Questo mese</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card stat-card stat-danger h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-danger"><i class="bi bi-x-circle-fill"></i></div>
+                    <div>
+                        <div class="stat-label">Rifiutati (mese)</div>
+                        <div class="stat-value" style="color:var(--color-danger)">{{ dept_stats.rejected_this_month }}</div>
+                        <div class="stat-sub">Questo mese</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket in attesa di approvazione -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-clock-fill" style="color:var(--color-warning); font-size:.85rem"></i>
+                <h6 class="mb-0 fw-semibold" style="font-size:0.9rem">Ticket in Attesa di Approvazione</h6>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if pending_tickets %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titolo</th>
+                            <th>Categoria</th>
+                            <th>Creatore</th>
+                            <th>Data</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in pending_tickets %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                   style="font-size:0.78rem; font-weight:700; color:var(--color-accent); text-decoration:none">
+                                    #{{ ticket.id }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                   style="font-weight:500; font-size:0.875rem; color:var(--text-primary); text-decoration:none">
+                                    {{ ticket.title }}
+                                </a>
+                            </td>
+                            <td>
+                                <span style="font-size:0.78rem; background:var(--surface-elevated); padding:.1rem .45rem;
+                                             border-radius:var(--radius-pill); border:1px solid var(--surface-border);
+                                             color:var(--text-secondary)">
+                                    {{ ticket.category_rel.name }}
+                                </span>
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ ticket.creator.username }}</td>
+                            <td style="font-size:0.82rem; color:var(--text-secondary)">{{ ticket.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <!-- PRIMARIO COSTRUTTIVO: Approva -->
+                                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Approvare il ticket #{{ ticket.id }}?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="approve_dept">
+                                        <button type="submit" class="btn btn-action-constructive btn-sm">
+                                            <i class="bi bi-check-circle me-1"></i>Approva
+                                        </button>
+                                    </form>
+                                    <!-- DISTRUTTIVO: Rifiuta -->
+                                    <form method="POST" action="{{ url_for('ticket_action', ticket_id=ticket.id) }}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Rifiutare il ticket #{{ ticket.id }}?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="reject_dept">
+                                        <button type="submit" class="btn btn-action-destructive btn-sm">
+                                            <i class="bi bi-x-circle me-1"></i>Rifiuta
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-check-circle-fill display-5" style="color:var(--color-success)"></i>
+                <h6 class="mt-3 mb-1" style="color:var(--text-secondary)">Tutto approvato!</h6>
+                <p class="mb-0" style="font-size:0.85rem; color:var(--text-muted)">
+                    Nessun ticket in attesa di approvazione.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0 fw-semibold" style="font-size:0.85rem">Azioni Rapide</h6>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('ticket_list') }}" class="btn btn-action-primary btn-sm">
+                    <i class="bi bi-list-ul me-1"></i>Tutti i Ticket del Dipartimento
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-action-secondary btn-sm">
+                    <i class="bi bi-speedometer2 me-1"></i>Dashboard Principale
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-refresh ogni 60 secondi
+    setTimeout(function() { location.reload(); }, 60000);
+</script>
+{% endblock %}

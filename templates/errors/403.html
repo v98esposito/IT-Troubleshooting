@@ -1,19 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}403 Forbidden - IT Support Tickets{% endblock %}
+{% block title %}403 Accesso Negato — IT Support{% endblock %}
 
 {% block content %}
-<div class="container text-center py-5">
-    <div class="error-page">
-        <i class="bi bi-shield-exclamation display-1 text-danger mb-4"></i>
-        <h1 class="display-4">403 - Access Denied</h1>
-        <p class="lead mb-4">You don't have permission to access this resource.</p>
-        <p class="text-muted mb-4">If you believe you should have access to this page, please contact your administrator.</p>
-        <div class="mt-4">
-            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
-                <i class="bi bi-house me-1"></i> Return to Dashboard
-            </a>
+<div class="row justify-content-center align-items-center" style="min-height:60vh">
+    <div class="col-md-6 text-center animate-fade-in">
+        <div style="width:96px; height:96px; background:var(--color-danger-soft); border-radius:30px;
+                    display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem;
+                    box-shadow:0 8px 32px rgba(239,68,68,.15)">
+            <i class="bi bi-shield-lock" style="font-size:3.5rem; color:var(--color-danger)"></i>
         </div>
+        
+        <h1 class="display-4 fw-bold mb-2">403</h1>
+        <h4 class="mb-3">Accesso Negato</h4>
+        
+        <p class="mb-4" style="color:var(--text-secondary); max-width:400px; margin:0 auto">
+            Non hai i permessi necessari per accedere a questa risorsa. Se ritieni si tratti di un errore, contatta l'amministratore.
+        </p>
+        
+        <a href="{{ url_for('dashboard') }}" class="btn btn-action-primary px-4">
+            <i class="bi bi-house-door me-2"></i>Torna alla Dashboard
+        </a>
     </div>
 </div>
 {% endblock %}

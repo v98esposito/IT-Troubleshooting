@@ -1,30 +1,17 @@
 import os
 import logging
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
-from flask_login import LoginManager
-from flask_mail import Mail
-from flask_wtf.csrf import CSRFProtect
+import json
+from extensions import db, login_manager, mail, csrf
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Create database base class
-class Base(DeclarativeBase):
-    pass
-
-# Initialize extensions
-db = SQLAlchemy(model_class=Base)
-login_manager = LoginManager()
-mail = Mail()
-csrf = CSRFProtect()
-
 # Create the app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-for-csrf-protection-2025")
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # needed for url_for to generate with https
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure the database
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///ticketing.db")
@@ -55,18 +42,35 @@ mail.init_app(app)
 csrf.init_app(app)
 
 # Create upload folder if it doesn't exist
-if not os.path.exists(app.config["UPLOAD_FOLDER"]):
-    os.makedirs(app.config["UPLOAD_FOLDER"])
+# Using app.root_path to ensure the path is relative to the app's root
+upload_folder_path = os.path.join(app.root_path, app.config["UPLOAD_FOLDER"])
+if not os.path.exists(upload_folder_path):
+    os.makedirs(upload_folder_path)
 
 # Import models and create tables
 with app.app_context():
-    from models import User, Ticket, TicketStatus, Comment, Attachment, Category
+    from models import User, Ticket, TicketStatus, Comment, Attachment, Category, Department, PasswordReset
     db.create_all()
-    
-    # Check if categories exist, if not create default categories
-    from routes import init_default_data
-    init_default_data()
 
-# Import and register routes
-from routes import register_routes
-register_routes(app)
+# Run the app
+if __name__ == '__main__':
+    # Import and register routes
+    from routes import register_routes
+    register_routes(app)
+    
+    # Run the app
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
+# Custom Jinja2 filter for escaping JavaScript
+@app.template_filter('escapejs')
+def escapejs_filter(value):
+    if value is None:
+        return ''
+    # Using json.dumps to safely escape strings for JavaScript context
+    # The slicing [1:-1] removes the surrounding double quotes added by json.dumps
+    return json.dumps(str(value))[1:-1]
+
+
+# If you intend to run this file directly for development (though main.py is preferred):
+# if __name__ == '__main__':
+#     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

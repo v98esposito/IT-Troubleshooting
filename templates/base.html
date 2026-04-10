@@ -1,145 +1,307 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="it" data-bs-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IT Support Ticket System — gestione richieste di supporto interno">
     <title>{% block title %}IT Support Ticket System{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <style>
+        /* Navbar override per allineamento col nuovo design system */
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: -0.3px;
+            color: var(--text-primary) !important;
+        }
+        .navbar-brand-icon {
+            width: 32px; height: 32px;
+            background: var(--color-accent);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+        .btn-new-ticket {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 0.35rem 0.9rem;
+            border-radius: 20px;
+            transition: all var(--transition);
+        }
+        .btn-new-ticket:hover {
+            background: var(--color-accent-hover);
+            border-color: var(--color-accent-hover);
+            color: #fff;
+            box-shadow: 0 0 0 3px var(--color-accent-soft);
+        }
+        .user-avatar {
+            width: 30px; height: 30px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--surface-border);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.8rem;
+            color: var(--color-accent);
+            flex-shrink: 0;
+        }
+        .nav-divider {
+            width: 1px; height: 20px;
+            background: var(--surface-border);
+            margin: 0 0.25rem;
+        }
+    </style>
 </head>
-<body>
+
+<body class="d-flex flex-column min-vh-100 animate-fade-in">
+
+    {% if current_user.is_authenticated %}
+    <!-- ── Role Context Bar ── -->
+    {% if current_user.is_admin() %}
+    <div class="role-context-bar admin-bar">
+        <i class="bi bi-shield-lock-fill"></i>
+        <span>Modalità Amministratore</span>
+        <span class="ms-auto opacity-60">Accesso completo al sistema</span>
+    </div>
+    {% elif current_user.is_manager() %}
+    <div class="role-context-bar manager-bar">
+        <i class="bi bi-briefcase-fill"></i>
+        <span>IT Manager — Approvazioni e supervisione ticket</span>
+    </div>
+    {% elif current_user.is_it() %}
+    <div class="role-context-bar it-bar">
+        <i class="bi bi-tools"></i>
+        <span>IT Staff — Gestione e risoluzione ticket</span>
+    </div>
+    {% endif %}
+    {% endif %}
+
     <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <nav class="navbar navbar-expand-lg sticky-top">
             <div class="container">
-                <a class="navbar-brand" href="{{ url_for('index') }}">
-                    <i class="bi bi-ticket-perforated-fill me-2"></i>
-                    IT Support Tickets
+                <!-- Brand -->
+                <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+                    <div class="navbar-brand-icon">
+                        <i class="bi bi-ticket-perforated-fill text-white"></i>
+                    </div>
+                    <span>IT Support</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
+                    aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                
+
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ms-auto">
-                        {% if current_user.is_authenticated %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('dashboard') }}">
-                                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('ticket_list') }}">
-                                    <i class="bi bi-list-ul me-1"></i> My Tickets
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('ticket_create') }}">
-                                    <i class="bi bi-plus-circle me-1"></i> New Ticket
-                                </a>
-                            </li>
-                            
-                            {% if current_user.is_manager() %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('approvals') }}">
-                                    <i class="bi bi-check-circle me-1"></i> Approvals
-                                </a>
-                            </li>
-                            {% endif %}
-                            
-                            {% if current_user.is_it() %}
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="itDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-tools me-1"></i> IT Tools
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="itDropdown">
-                                    <li>
-                                        <a class="dropdown-item" href="{{ url_for('assignments') }}">
-                                            <i class="bi bi-briefcase me-1"></i> Assignments
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{{ url_for('it_dashboard') }}">
-                                            <i class="bi bi-speedometer me-1"></i> IT Dashboard
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{{ url_for('user_list') }}">
-                                            <i class="bi bi-people me-1"></i> Manage Users
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            {% endif %}
-                            
-                            {% if current_user.is_admin() %}
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-gear me-1"></i> Admin
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                    <li><a class="dropdown-item" href="{{ url_for('user_list') }}">Users</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('category_list') }}">Categories</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('reports') }}">Reports</a></li>
-                                </ul>
-                            </li>
-                            {% endif %}
-                            
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-person-circle me-1"></i> {{ current_user.username }}
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="userDropdown">
-                                    <li><span class="dropdown-item-text text-muted">{{ current_user.role.value }}</span></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
-                                </ul>
-                            </li>
-                        {% else %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-                            </li>
+                    {% if current_user.is_authenticated %}
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}"
+                                href="{{ url_for('dashboard') }}">
+                                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'ticket_list' }}"
+                                href="{{ url_for('ticket_list') }}">
+                                <i class="bi bi-list-ul me-1"></i>Tickets
+                            </a>
+                        </li>
+
+                        <!-- Management Section -->
+                        {% if current_user.is_dept_manager() or current_user.is_manager() %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint in ['department_manager_dashboard', 'approvals', 'manager_ticket_history'] }}"
+                                href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                <i class="bi bi-briefcase me-1"></i>Management
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="managementDropdown">
+                                {% if current_user.is_dept_manager() %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('department_manager_dashboard') }}">
+                                        <i class="bi bi-building text-info"></i>Dashboard Dipartimento
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if current_user.is_manager() %}
+                                {% if current_user.is_dept_manager() %}<li><hr class="dropdown-divider"></li>{% endif %}
+                                <li><span class="dropdown-header">IT Management</span></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('approvals') }}">
+                                        <i class="bi bi-check-circle" style="color:var(--color-warning)"></i>Approvazioni
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('manager_ticket_history') }}">
+                                        <i class="bi bi-clock-history" style="color:var(--color-neutral)"></i>Storico
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- IT Staff Tools -->
+                        {% if current_user.is_it() %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint in ['assignments', 'it_dashboard'] }}"
+                                href="#" id="itDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-tools me-1"></i>IT Tools
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="itDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('assignments') }}">
+                                        <i class="bi bi-inbox" style="color:var(--color-accent)"></i>I Miei Incarichi
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('it_dashboard') }}">
+                                        <i class="bi bi-graph-up" style="color:var(--color-success)"></i>IT Performance
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- Admin Section -->
+                        {% if current_user.is_admin() %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint in ['user_list', 'department_list', 'category_list', 'reports'] }}"
+                                href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                <i class="bi bi-shield-lock me-1"></i>Admin
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li><span class="dropdown-header">Configurazione Sistema</span></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('user_list') }}">
+                                        <i class="bi bi-people" style="color:var(--color-accent)"></i>Utenti & Ruoli
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('department_list') }}">
+                                        <i class="bi bi-building" style="color:var(--color-info)"></i>Dipartimenti
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('category_list') }}">
+                                        <i class="bi bi-tags" style="color:var(--color-warning)"></i>Categorie
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('reports') }}">
+                                        <i class="bi bi-bar-chart" style="color:var(--color-success)"></i>Report Sistema
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                         {% endif %}
                     </ul>
+
+                    <!-- Right Side -->
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{{ url_for('ticket_create') }}" class="btn btn-new-ticket btn-sm" id="nav-new-ticket">
+                            <i class="bi bi-plus-lg me-1"></i>Nuovo Ticket
+                        </a>
+
+                        <div class="nav-divider d-none d-lg-block"></div>
+
+                        <div class="dropdown">
+                            <a href="#" class="d-flex align-items-center gap-2 text-decoration-none"
+                                id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="user-avatar">{{ current_user.username[0]|upper }}</div>
+                                <div class="d-none d-lg-block text-start lh-1">
+                                    <div style="font-size:0.82rem; font-weight:600; color:var(--text-primary)">
+                                        {{ current_user.username }}
+                                    </div>
+                                    <div style="font-size:0.7rem; color:var(--text-muted)">
+                                        {{ current_user.role.value }}
+                                    </div>
+                                </div>
+                                <i class="bi bi-chevron-down d-none d-lg-block" style="font-size:0.65rem; color:var(--text-muted)"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li>
+                                    <div class="px-3 py-2" style="border-bottom:1px solid var(--surface-border)">
+                                        <div style="font-size:0.8rem; font-weight:600">{{ current_user.username }}</div>
+                                        <div style="font-size:0.72rem; color:var(--text-muted)">{{ current_user.email if current_user.email else current_user.role.value }}</div>
+                                    </div>
+                                </li>
+                                <li class="mt-1">
+                                    <a class="dropdown-item" href="{{ url_for('logout') }}" style="color:var(--color-danger)">
+                                        <i class="bi bi-box-arrow-right" style="color:var(--color-danger)"></i>Esci
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% else %}
+                    <ul class="navbar-nav ms-auto gap-1">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Accedi</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">Registrati</a>
+                        </li>
+                    </ul>
+                    {% endif %}
                 </div>
             </div>
         </nav>
     </header>
-    
-    <main class="container mt-4">
+
+    <main class="container py-4 flex-grow-1">
+        <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+        <div class="mb-3">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show d-flex align-items-start gap-2"
+                role="alert">
+                {% if category == 'success' %}
+                <i class="bi bi-check-circle-fill flex-shrink-0 mt-1" style="color:var(--color-success)"></i>
+                {% elif category == 'danger' %}
+                <i class="bi bi-exclamation-circle-fill flex-shrink-0 mt-1" style="color:var(--color-danger)"></i>
+                {% elif category == 'warning' %}
+                <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1" style="color:var(--color-warning)"></i>
+                {% else %}
+                <i class="bi bi-info-circle-fill flex-shrink-0 mt-1" style="color:var(--color-info)"></i>
+                {% endif %}
+                <div>{{ message }}</div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
-        
+
         {% block content %}{% endblock %}
     </main>
-    
-    <footer class="bg-dark text-light py-4 mt-5">
+
+    <footer class="py-3 mt-auto" style="background:var(--surface-card); border-top:1px solid var(--surface-border)">
         <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>IT Support Ticket System</h5>
-                    <p>A comprehensive solution for managing IT support requests and tasks.</p>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-ticket-perforated" style="color:var(--color-accent)"></i>
+                    <span style="font-size:0.8rem; font-weight:600; color:var(--text-secondary)">IT Support Ticket System</span>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <p>&copy; 2025 IT Support Team</p>
-                </div>
+                <p class="small mb-0" style="color:var(--text-muted)">&copy; 2026 IT Support Team</p>
             </div>
         </div>
     </footer>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
+
 </html>
