@@ -5,7 +5,7 @@ from flask import current_app
 from flask_mail import Message
 from werkzeug.utils import secure_filename
 #from app import mail
-from extensions import mail
+from extensions import db, mail
 from models import Ticket, User, TicketStatus, UserRole
 
 
