@@ -143,8 +143,8 @@ def register_routes(app):
     @app.before_request
     def enforce_password_change():
         from models import PasswordReset
-        # Forza il cambio password per utenti non-admin se marcati must_change
-        if current_user.is_authenticated and not current_user.is_admin():
+        # Forza il cambio password se marcati must_change
+        if current_user.is_authenticated:
             pr = PasswordReset.query.filter_by(user_id=current_user.id, must_change=True).first()
             allowed_endpoints = {'change_password', 'logout', 'static', 'login'}
             if pr and request.endpoint not in allowed_endpoints:
@@ -461,10 +461,11 @@ def register_routes(app):
             # Check if the category requires approval
             category = Category.query.get(form.category_id.data)
             if category and category.requires_approval:
-                # Nuovo workflow: prima approvazione del Manager di Dipartimento
+                # Workflow con approvazione: prima il Manager di Dipartimento, poi l'IT Manager
                 ticket.status = TicketStatus.AWAITING_DEPT_MANAGER_APPROVAL
             else:
-                ticket.status = TicketStatus.NEW
+                # Workflow senza approvazione del Dept Manager: va direttamente all'IT Manager
+                ticket.status = TicketStatus.AWAITING_IT_MANAGER_APPROVAL
             
             db.session.add(ticket)
             db.session.commit()
@@ -1059,6 +1060,11 @@ def register_routes(app):
             db.session.add(user)
             db.session.commit()
             
+            from models import PasswordReset
+            pr = PasswordReset(user_id=user.id, must_change=True)
+            db.session.add(pr)
+            db.session.commit()
+            
             flash('User created successfully.', 'success')
             return redirect(url_for('user_list'))
             
@@ -1213,15 +1219,14 @@ def register_routes(app):
         
         if form.validate_on_submit():
             user.set_password(form.password.data)
-            # Impone cambio password per utenti non-admin
-            if not user.is_admin():
-                from models import PasswordReset
-                pr = PasswordReset.query.filter_by(user_id=user.id).first()
-                if pr:
-                    pr.must_change = True
-                else:
-                    pr = PasswordReset(user_id=user.id, must_change=True)
-                    db.session.add(pr)
+            # Impone cambio password
+            from models import PasswordReset
+            pr = PasswordReset.query.filter_by(user_id=user.id).first()
+            if pr:
+                pr.must_change = True
+            else:
+                pr = PasswordReset(user_id=user.id, must_change=True)
+                db.session.add(pr)
             db.session.commit()
             flash(f'Password aggiornata con successo per l\'utente {user.username}', 'success')
         else:
